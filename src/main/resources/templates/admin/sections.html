@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Sections & Academic Hierarchy')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='sections')}"></aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Academic Hierarchy: Sections & Classes')}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Sections & Class Management</h4>
+                    <p class="text-secondary small mb-0">Department &rarr; Course &rarr; Semester &rarr; Section &rarr; Subject &rarr; Faculty</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createSectionModal">
+                        <i class="bi bi-plus-circle me-1"></i> Create Section
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#assignStudentModal">
+                        <i class="bi bi-person-check-fill me-1"></i> Assign Student
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#assignSubjectModal">
+                        <i class="bi bi-book-half me-1"></i> Assign Subject
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#assignFacultyModal">
+                        <i class="bi bi-person-badge me-1"></i> Assign Faculty
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${param.success != null}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> Operation completed successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Sections Table Card -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Active Academic Sections</div>
+                    <span class="badge bg-light text-muted border" th:text="${sections.size()} + ' Sections Configured'">0 Sections</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Section & Name</th>
+                                <th>Course & Dept</th>
+                                <th>Semester</th>
+                                <th>Capacity</th>
+                                <th>Students Enrolled</th>
+                                <th>Subjects Assigned</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="sec : ${sections}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${sec.displayName}">Section A</div>
+                                    <small class="text-muted" th:text="'Academic Year: ' + ${sec.academicYear}">2024-2025</small>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${sec.course != null ? sec.course.courseName : 'N/A'}">B.Tech CSE</div>
+                                    <small class="text-secondary" th:text="${sec.course != null && sec.course.department != null ? sec.course.department.name : 'N/A'}">Computer Science</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary" th:text="'Sem ' + ${sec.semester}">Sem 2</span>
+                                </td>
+                                <td>
+                                    <span class="fw-medium text-dark" th:text="${sec.capacity} + ' seats'">60 seats</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info fw-semibold" th:text="${sec.students != null ? sec.students.size() : 0} + ' Students'">0 Students</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success-subtle text-success fw-semibold" th:text="${sec.subjects != null ? sec.subjects.size() : 0} + ' Subjects'">0 Subjects</span>
+                                </td>
+                                <td class="text-end">
+                                    <form th:action="@{'/admin/sections/delete/' + ${sec.id}}" method="post" class="d-inline" onsubmit="return confirm('Delete this section?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Section">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(sections)}">
+                                <td colspan="7" class="text-center text-muted py-4">No sections configured yet. Click "Create Section" to begin.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Subject-Faculty Hierarchy Grid -->
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <div class="fw-bold text-dark"><i class="bi bi-mortarboard-fill text-info me-2"></i>Subject & Faculty Assignment Mapping</div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Subject Code & Name</th>
+                                <th>Course / Sem</th>
+                                <th>Assigned Section</th>
+                                <th>Assigned Faculty</th>
+                                <th>Credits</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="sub : ${subjects}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${sub.name}">Java Programming</div>
+                                    <small class="text-muted" th:text="${sub.code}">CS201</small>
+                                </td>
+                                <td>
+                                    <span class="fw-medium text-dark" th:text="${sub.course != null ? sub.course.courseCode : 'N/A'}">B.Tech</span>
+                                    <span class="badge bg-light text-dark border ms-1" th:text="'Sem ' + ${sub.semester}">Sem 2</span>
+                                </td>
+                                <td>
+                                    <span th:if="${sub.section != null}" class="badge bg-primary-subtle text-primary" th:text="${sub.section.displayName}">Sec A</span>
+                                    <span th:if="${sub.section == null}" class="badge bg-secondary-subtle text-secondary">All Sections</span>
+                                </td>
+                                <td>
+                                    <div th:if="${sub.teacher != null}" class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center fw-bold" style="width:28px; height:28px; font-size:0.75rem;">F</div>
+                                        <div>
+                                            <div class="fw-semibold text-dark small" th:text="${sub.teacher.name}">Dr. Smith</div>
+                                            <small class="text-muted" style="font-size:0.7rem;" th:text="${sub.teacher.teacherId}">FAC001</small>
+                                        </div>
+                                    </div>
+                                    <span th:if="${sub.teacher == null}" class="text-warning small"><i class="bi bi-exclamation-circle me-1"></i>Unassigned</span>
+                                </td>
+                                <td>
+                                    <span class="small fw-semibold text-dark" th:text="${sub.credits}">4</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal 1: Create Section -->
+<div class="modal fade" id="createSectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/admin/sections/create}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Create Academic Section</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Section Name (e.g. Section A, Sec B)</label>
+                        <input type="text" name="name" class="form-control" required placeholder="Section A">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Course / Program</label>
+                        <select name="courseId" class="form-select" required>
+                            <option value="">Select Course</option>
+                            <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.courseName + ' (' + c.courseCode + ')'}">B.Tech</option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Semester</label>
+                            <select name="semester" class="form-select" required>
+                                <option th:each="sem : ${#numbers.sequence(1, 8)}" th:value="${sem}" th:text="'Semester ' + ${sem}">Sem 1</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Capacity</label>
+                            <input type="number" name="capacity" class="form-control" value="60" min="1" max="200" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Academic Year</label>
+                        <input type="text" name="academicYear" class="form-control" value="2025-2026" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Section</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: Assign Student to Section -->
+<div class="modal fade" id="assignStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/admin/sections/assign-student}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Assign Student to Section</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Student</label>
+                        <select name="studentId" class="form-select" required>
+                            <option value="">Select Student</option>
+                            <option th:each="st : ${students}" th:value="${st.id}" th:text="${st.fullName + ' (' + st.studentId + ') - Sem ' + st.semester}">John Doe</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Assign Section</label>
+                        <select name="sectionId" class="form-select">
+                            <option value="">None / Unassigned</option>
+                            <option th:each="sec : ${sections}" th:value="${sec.id}" th:text="${sec.displayName + ' (' + (sec.course != null ? sec.course.courseCode : '') + ')'}">Sec A</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Assignment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 3: Assign Subject to Section -->
+<div class="modal fade" id="assignSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/admin/sections/assign-subject}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Assign Subject to Section</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Subject</label>
+                        <select name="subjectId" class="form-select" required>
+                            <option value="">Select Subject</option>
+                            <option th:each="sub : ${subjects}" th:value="${sub.id}" th:text="${sub.name + ' (' + sub.code + ') - Sem ' + sub.semester}">Java</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Target Section</label>
+                        <select name="sectionId" class="form-select">
+                            <option value="">All Sections (Common)</option>
+                            <option th:each="sec : ${sections}" th:value="${sec.id}" th:text="${sec.displayName + ' (' + (sec.course != null ? sec.course.courseCode : '') + ')'}">Sec A</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white">Save Subject Assignment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 4: Assign Faculty to Subject -->
+<div class="modal fade" id="assignFacultyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/admin/sections/assign-faculty}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Assign Faculty to Subject</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Subject</label>
+                        <select name="subjectId" class="form-select" required>
+                            <option value="">Select Subject</option>
+                            <option th:each="sub : ${subjects}" th:value="${sub.id}" th:text="${sub.name + ' (' + sub.code + ')'}">Java</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Faculty Instructor</label>
+                        <select name="teacherId" class="form-select">
+                            <option value="">None / Unassigned</option>
+                            <option th:each="t : ${teachers}" th:value="${t.id}" th:text="${t.name + ' (' + t.teacherId + ') - ' + (t.department != null ? t.department.code : '')}">Dr. Alan Turing</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Assign Faculty</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+</body>
+</html>

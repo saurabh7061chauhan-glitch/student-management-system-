@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Student Dashboard')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='dashboard', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='My Student Dashboard', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Welcome Banner -->
+            <div class="card-custom mb-4 bg-white border-0 shadow-sm" style="background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%) !important; color: white;">
+                <div class="card-custom-body p-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <img th:src="${student.photoUrl}" class="avatar-lg border-2 border-white" alt="Avatar">
+                            <div>
+                                <h4 class="fw-bold mb-1" th:text="'Welcome back, ' + ${student.fullName} + '!'">Welcome!</h4>
+                                <div class="text-white-50 small d-flex flex-wrap gap-3">
+                                    <span><i class="bi bi-card-text me-1"></i> <strong class="text-white" th:text="${student.studentId}">STU</strong></span>
+                                    <span><i class="bi bi-building me-1"></i> <span th:text="${student.department != null ? student.department.name : ''}">CS</span></span>
+                                    <span><i class="bi bi-journal-code me-1"></i> <span th:text="${student.course != null ? student.course.code : ''}">BTECH</span> (Sem <span th:text="${student.semester}">1</span>)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="badge bg-success px-3 py-2 fs-6 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> Enrolled & Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student KPI Metrics -->
+            <!-- Student KPI Metrics (Interactive Navigation Cards) -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card hover-shadow transition" style="cursor: pointer;"
+                         th:onclick="'window.location.href=\'' + @{/student/attendance} + '\''">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">My Attendance</span>
+                                <h3 class="fw-bold mb-0 mt-1" th:text="${overallAttendance + '%'}">0%</h3>
+                                <small th:if="${overallAttendance >= 75}" class="text-success fw-semibold"><i class="bi bi-check-circle"></i> Eligible for Exams</small>
+                                <small th:unless="${overallAttendance >= 75}" class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle"></i> Short Attendance</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-success">
+                                <i class="bi bi-calendar2-check-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card hover-shadow transition" style="cursor: pointer;"
+                         th:onclick="'window.location.href=\'' + @{/student/results} + '\''">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">Academic CGPA</span>
+                                <h3 class="fw-bold mb-0 mt-1" th:text="${resultSummary != null ? resultSummary.gpa : 'N/A'}">3.8</h3>
+                                <small class="text-primary fw-semibold" th:text="${resultSummary != null ? 'Grade: ' + resultSummary.finalGrade : 'In progress'}">Grade: A</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-primary">
+                                <i class="bi bi-award-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card hover-shadow transition" style="cursor: pointer;"
+                         th:onclick="'window.location.href=\'' + @{/student/subjects} + '\''">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">Degree Semester</span>
+                                <h3 class="fw-bold mb-0 mt-1" th:text="'Sem ' + ${student.semester}">Sem 3</h3>
+                                <small class="text-muted"><i class="bi bi-book me-1"></i> View My Subjects</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-info">
+                                <i class="bi bi-book-half"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-xl-3">
+                    <div class="stat-card hover-shadow transition" style="cursor: pointer;"
+                         th:onclick="'window.location.href=\'' + @{/student/notifications} + '\''">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">Active Bulletins</span>
+                                <h3 class="fw-bold mb-0 mt-1" th:text="${#lists.size(notices)}">0</h3>
+                                <small class="text-warning fw-semibold"><i class="bi bi-bell-fill"></i> Campus Notices</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-warning">
+                                <i class="bi bi-megaphone-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Schedule Card -->
+            <div class="card-custom mb-4 bg-white border">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark"><i class="bi bi-calendar-week-fill text-primary me-2"></i>Today's Class Schedule</span>
+                    <a th:href="@{/student/timetable}" class="btn btn-outline-primary btn-sm py-1 px-3 fw-semibold">
+                        <i class="bi bi-calendar3 me-1"></i> View Full Timetable
+                    </a>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div th:if="${#lists.isEmpty(todayClasses)}" class="p-3 text-center text-muted small">
+                        <i class="bi bi-check-circle text-success me-1"></i> No lectures scheduled for today. <a th:href="@{/student/timetable}" class="fw-semibold">Check full timetable & session dates</a>.
+                    </div>
+                    <div class="list-group list-group-flush" th:if="${!#lists.isEmpty(todayClasses)}">
+                        <div class="list-group-item p-3 d-flex justify-content-between align-items-center" th:each="tc : ${todayClasses}">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-primary px-3 py-2 fw-semibold" th:text="${tc.formattedTiming}">09:00 AM - 10:30 AM</span>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">
+                                        <a th:if="${tc.subject != null}" th:href="@{/student/subjects/{id}(id=${tc.subject.id})}"
+                                           class="text-decoration-none text-dark hover-primary"
+                                           th:text="${tc.subject.name}">Data Structures</a>
+                                        <span th:unless="${tc.subject != null}">Scheduled Class</span>
+                                    </h6>
+                                    <small class="text-secondary">
+                                        <i class="bi bi-geo-alt me-1"></i><span th:text="${tc.roomNo}">Room 301</span>
+                                        <span class="mx-2">•</span>
+                                        <i class="bi bi-person me-1"></i><span th:text="${tc.teacher != null ? tc.teacher.name : 'Teacher'}">Dr. Turing</span>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-dark border" th:text="${tc.classType}">Lecture</span>
+                                <a th:if="${tc.subject != null}" th:href="@{/student/subjects/{id}(id=${tc.subject.id})}" class="btn btn-xs btn-outline-primary py-1 px-2 small">
+                                    <i class="bi bi-eye"></i> Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enrolled Subjects Row (Clickable Cards) -->
+            <div class="card-custom mb-4 bg-white border" th:if="${enrolledSubjects != null && !#lists.isEmpty(enrolledSubjects)}">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark"><i class="bi bi-book-half text-primary me-2"></i>My Enrolled Subjects</span>
+                    <a th:href="@{/student/subjects}" class="btn btn-outline-primary btn-sm py-1 px-3 fw-semibold">
+                        View All Subjects <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-custom-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6 col-lg-4" th:each="es : ${enrolledSubjects}">
+                            <div class="p-3 bg-light rounded-3 border hover-shadow transition" style="cursor: pointer;"
+                                 th:onclick="'window.location.href=\'' + @{/student/subjects/{id}(id=${es.id})} + '\''">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge bg-primary px-2 py-1" th:text="${es.code}">CS301</span>
+                                    <span class="badge bg-light text-dark border small" th:text="${es.credits != null ? es.credits + ' Credits' : '4 Credits'}">4 Credits</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">
+                                    <a th:href="@{/student/subjects/{id}(id=${es.id})}" class="text-decoration-none text-dark hover-primary" th:text="${es.name}">
+                                        Data Structures
+                                    </a>
+                                </h6>
+                                <div class="small text-muted mb-2">
+                                    <i class="bi bi-person me-1"></i> <span th:text="${es.teacher != null ? es.teacher.name : 'Faculty'}">Dr. Turing</span>
+                                </div>
+                                <a th:href="@{/student/subjects/{id}(id=${es.id})}" class="btn btn-sm btn-outline-primary w-100 fw-semibold">
+                                    Open Subject
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Row: Announcements & Fee Invoices -->
+            <div class="row g-4">
+                <!-- Latest Campus Bulletins -->
+                <div class="col-lg-7">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-bell-fill text-warning me-2"></i>Campus Announcements</span>
+                            <a th:href="@{/student/notifications}" class="btn btn-link btn-sm text-decoration-none">View All</a>
+                        </div>
+                        <div class="card-custom-body p-0">
+                            <div class="list-group list-group-flush">
+                                <div th:each="n : ${notices}" class="list-group-item p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="badge bg-primary-subtle text-primary small" th:text="${n.category}">Category</span>
+                                        <small class="text-muted" th:text="${n.postedDate}">Date</small>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1" th:text="${n.title}">Notice title</h6>
+                                    <p class="text-secondary small mb-0" th:text="${n.content}">Body text...</p>
+                                </div>
+                                <div th:if="${#lists.isEmpty(notices)}" class="text-center text-muted py-4">
+                                    No new notifications today.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fee Overview Card -->
+                <div class="col-lg-5">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-wallet2 text-primary me-2"></i>Fee Statement</span>
+                            <a th:href="@{/student/fees}" class="btn btn-link btn-sm text-decoration-none">Details</a>
+                        </div>
+                        <div class="card-custom-body">
+                            <div th:each="f : ${fees}" class="p-3 bg-light rounded-3 mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-dark small" th:text="${f.title}">Semester 3 Tuition Fee</span>
+                                    <span th:if="${f.status == 'Paid'}" class="badge-status badge-status-paid">Paid</span>
+                                    <span th:if="${f.status == 'Partial'}" class="badge-status badge-status-partial">Partial</span>
+                                    <span th:if="${f.status == 'Unpaid'}" class="badge-status badge-status-unpaid">Unpaid</span>
+                                </div>
+                                <div class="d-flex justify-content-between small text-secondary">
+                                    <span>Total: <strong class="text-dark" th:text="'$' + ${f.totalAmount}">$0</strong></span>
+                                    <span>Paid: <strong class="text-success" th:text="'$' + ${f.paidAmount}">$0</strong></span>
+                                    <span>Remaining: <strong class="text-danger" th:text="'$' + ${f.remainingAmount}">$0</strong></span>
+                                </div>
+                            </div>
+                            <div th:if="${#lists.isEmpty(fees)}" class="text-center text-muted py-4">
+                                No fee statements billed.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

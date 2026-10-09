@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Student Dossier')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='students')}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Student Profile Dossier')}"></nav>
+
+        <div class="page-container">
+            <!-- Student Header Profile Banner -->
+            <div class="card-custom mb-4 bg-white">
+                <div class="card-custom-body">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <img th:src="${student.photoUrl}" class="avatar-lg" alt="Student Photo">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <h4 class="fw-bold mb-0 text-dark" th:text="${student.fullName}">Full Name</h4>
+                                    <span th:if="${student.status == 'Active'}" class="badge-status badge-status-active">
+                                        <i class="bi bi-check-circle-fill"></i> Active
+                                    </span>
+                                    <span th:if="${student.status == 'Pending Verification'}" class="badge-status badge-status-pending">
+                                        <i class="bi bi-hourglass-split"></i> Pending Verification
+                                    </span>
+                                    <span th:if="${student.status == 'Disabled'}" class="badge-status badge-status-disabled">
+                                        <i class="bi bi-slash-circle-fill"></i> Disabled
+                                    </span>
+                                </div>
+                                <div class="text-secondary small d-flex flex-wrap gap-3">
+                                    <span><i class="bi bi-card-text text-primary me-1"></i> ID: <strong th:text="${student.studentId}">STU</strong></span>
+                                    <span><i class="bi bi-envelope text-primary me-1"></i> <span th:text="${student.email}">Email</span></span>
+                                    <span><i class="bi bi-telephone text-primary me-1"></i> <span th:text="${student.phone}">Phone</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <a th:href="@{'/admin/students/' + ${student.id} + '/id-card/pdf'}" target="_blank" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-person-badge me-1"></i> ID Card (PDF)
+                            </a>
+                            <a th:href="@{'/admin/students/' + ${student.id} + '/marksheet/pdf'}" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-file-earmark-pdf me-1"></i> Marksheet (PDF)
+                            </a>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="printReport()">
+                                <i class="bi bi-printer me-1"></i> Print Dossier
+                            </button>
+                            <a th:href="@{/admin/students}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i> Back
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <ul class="nav nav-pills mb-3 gap-2" id="studentDetailTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active fw-semibold" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+                        <i class="bi bi-person-lines-fill me-1"></i> Overview
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="attendance-tab" data-bs-toggle="tab" data-bs-target="#attendance" type="button">
+                        <i class="bi bi-calendar2-check-fill me-1"></i> Attendance (<span th:text="${overallAttendance + '%'}">0%</span>)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="marks-tab" data-bs-toggle="tab" data-bs-target="#marks" type="button">
+                        <i class="bi bi-award-fill me-1"></i> Marks & GPA
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="fees-tab" data-bs-toggle="tab" data-bs-target="#fees" type="button">
+                        <i class="bi bi-wallet2 me-1"></i> Fee Ledger
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="studentDetailTabsContent">
+                <!-- Tab 1: Overview -->
+                <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card-custom h-100">
+                                <div class="card-custom-header">
+                                    <span class="fw-bold text-dark"><i class="bi bi-info-circle me-2 text-primary"></i>Personal Information</span>
+                                </div>
+                                <div class="card-custom-body">
+                                    <table class="table table-borderless table-sm mb-0">
+                                        <tr>
+                                            <td class="text-secondary fw-medium" style="width: 35%;">Date of Birth:</td>
+                                            <td class="fw-semibold text-dark" th:text="${student.dob != null ? student.dob : 'Not specified'}">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary fw-medium">Gender:</td>
+                                            <td class="fw-semibold text-dark" th:text="${student.gender}">Gender</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary fw-medium">Residential Address:</td>
+                                            <td class="fw-semibold text-dark" th:text="${student.address != null ? student.address : 'Not specified'}">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary fw-medium">Account Linked:</td>
+                                            <td class="fw-semibold text-dark" th:text="${student.user != null ? student.user.username : 'None'}">User</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary fw-medium">Email Verification:</td>
+                                            <td>
+                                                <span th:if="${student.user != null && student.user.emailVerified}" class="badge bg-success-subtle text-success">Verified</span>
+                                                <span th:unless="${student.user != null && student.user.emailVerified}" class="badge bg-warning-subtle text-warning">Pending Verification</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card-custom h-100">
+                                <div class="card-custom-header">
+                                    <span class="fw-bold text-dark"><i class="bi bi-mortarboard me-2 text-primary"></i>Academic Placement</span>
+                                </div>
+                                <div class="card-custom-body">
+                                    <table class="table table-borderless table-sm mb-0">
+                                        <tr>
+                                            <td class="text-secondary fw-medium" style="width: 35%;">Department:</td>
+                                            <td class="fw-semibold text-dark" th:text="${student.department != null ? student.department.name : 'N/A'}">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary fw-medium">Course:</td>
+                                            <td class="fw-semibold text-dark" th:text="${student.course != null ? student.course.name : 'N/A'}">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary fw-medium">Current Semester:</td>
+                                            <td class="fw-semibold text-dark" th:text="'Semester ' + ${student.semester}">1</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary fw-medium">Admission Date:</td>
+                                            <td class="fw-semibold text-dark" th:text="${student.admissionDate}">Date</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Attendance -->
+                <div class="tab-pane fade" id="attendance" role="tabpanel">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-calendar2-check text-success me-2"></i>Subject-Wise Attendance Breakdown</span>
+                            <span class="badge bg-primary fs-6" th:text="'Campus Rate: ' + ${overallAttendance} + '%'">0%</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Classes Held</th>
+                                        <th>Attended</th>
+                                        <th>Percentage</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="att : ${attendanceSummary}">
+                                        <td>
+                                            <div class="fw-bold text-dark" th:text="${att.subjectName}">Subject Name</div>
+                                            <small class="text-muted" th:text="${att.subjectCode}">Code</small>
+                                        </td>
+                                        <td th:text="${att.totalClasses}">0</td>
+                                        <td class="fw-bold text-success" th:text="${att.attendedClasses}">0</td>
+                                        <td style="min-width: 140px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 6px;">
+                                                    <div class="progress-bar" role="progressbar" th:style="'width: ' + ${att.attendancePercentage} + '%;'" th:classappend="${att.attendancePercentage >= 75 ? 'bg-success' : 'bg-danger'}"></div>
+                                                </div>
+                                                <span class="small fw-bold" th:text="${att.attendancePercentage + '%'}">0%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span th:if="${att.attendancePercentage >= 75}" class="badge bg-success-subtle text-success">Compliant</span>
+                                            <span th:unless="${att.attendancePercentage >= 75}" class="badge bg-danger-subtle text-danger">Short Attendance</span>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(attendanceSummary)}">
+                                        <td colspan="5" class="text-center text-muted py-4">No attendance records found for this student.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Marks & Results -->
+                <div class="tab-pane fade" id="marks" role="tabpanel">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-award text-info me-2"></i>Academic Marks & Grade Card</span>
+                            <div th:if="${resultSummary != null}" class="d-flex gap-2">
+                                <span class="badge bg-dark">GPA: <span th:text="${resultSummary.gpa}">0.0</span></span>
+                                <span class="badge bg-success" th:text="'Grade: ' + ${resultSummary.finalGrade}">A</span>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Internal (30)</th>
+                                        <th>External (70)</th>
+                                        <th>Total (100)</th>
+                                        <th>Grade</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="m : ${marks}">
+                                        <td>
+                                            <div class="fw-bold text-dark" th:text="${m.subject != null ? m.subject.name : 'N/A'}">Subject</div>
+                                            <small class="text-muted" th:text="${m.subject != null ? m.subject.code : ''}">Code</small>
+                                        </td>
+                                        <td th:text="${m.internalMarks}">0</td>
+                                        <td th:text="${m.externalMarks}">0</td>
+                                        <td class="fw-bold text-dark" th:text="${m.totalMarks}">0</td>
+                                        <td>
+                                            <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${m.grade}">A</span>
+                                        </td>
+                                        <td class="text-secondary small" th:text="${m.remarks}">Remarks</td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(marks)}">
+                                        <td colspan="6" class="text-center text-muted py-4">No marks entered for this student yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Fee Ledger -->
+                <div class="tab-pane fade" id="fees" role="tabpanel">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-wallet2 text-warning me-2"></i>Fee Statements</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Fee Description</th>
+                                        <th>Total Fee</th>
+                                        <th>Paid Amount</th>
+                                        <th>Remaining</th>
+                                        <th>Payment Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="f : ${fees}">
+                                        <td class="fw-bold text-dark" th:text="${f.title}">Semester Fee</td>
+                                        <td th:text="'$' + ${f.totalAmount}">$0</td>
+                                        <td class="text-success fw-semibold" th:text="'$' + ${f.paidAmount}">$0</td>
+                                        <td class="text-danger fw-semibold" th:text="'$' + ${f.remainingAmount}">$0</td>
+                                        <td class="small text-muted" th:text="${f.paymentDate != null ? f.paymentDate : 'Pending'}">-</td>
+                                        <td>
+                                            <span th:if="${f.status == 'Paid'}" class="badge-status badge-status-paid">Paid</span>
+                                            <span th:if="${f.status == 'Partial'}" class="badge-status badge-status-partial">Partial</span>
+                                            <span th:if="${f.status == 'Unpaid'}" class="badge-status badge-status-unpaid">Unpaid</span>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(fees)}">
+                                        <td colspan="6" class="text-center text-muted py-4">No fee records found for this student.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+</body>
+</html>

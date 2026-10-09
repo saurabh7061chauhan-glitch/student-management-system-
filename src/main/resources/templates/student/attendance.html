@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Attendance Management & Registry')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='attendance', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='My Attendance Record', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Flash Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Blue Header with Student Name and Roll Number (Design Reference) -->
+            <div class="card-custom mb-4 text-white overflow-hidden border-0 shadow-sm"
+                 style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);">
+                <div class="card-custom-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                <span class="badge bg-white text-primary fw-bold px-2 py-1" style="font-size: 0.75rem;">ATTENDANCE REGISTRY</span>
+                                <span class="badge bg-white bg-opacity-25 text-white" th:text="${student.course != null ? student.course.courseName : 'Engineering'}">B.Tech CS</span>
+                                <span class="badge bg-white bg-opacity-25 text-white" th:text="'Semester ' + ${student.semester}">Semester 3</span>
+                                <span class="badge bg-white bg-opacity-25 text-white" th:text="${student.section != null ? 'Section ' + student.section.name : 'Section A'}">Section A</span>
+                            </div>
+
+                            <h2 class="fw-bold mb-1 text-white" th:text="${student.fullName}">Alex Morgan</h2>
+                            <p class="mb-0 text-white-50 small">
+                                <i class="bi bi-person-badge me-1"></i> Roll Number: <strong class="text-white" th:text="${student.rollNo}">STU2025001</strong>
+                                <span class="mx-2">•</span>
+                                <i class="bi bi-calendar-check me-1"></i> Academic Term: <strong class="text-white">2026-2027</strong>
+                                <span class="mx-2">•</span>
+                                <i class="bi bi-check2-circle me-1"></i> Cumulative Attendance: 
+                                <strong class="text-white" th:text="${attendanceBreakdown != null ? attendanceBreakdown.attendancePercentage + '%' : overallAttendance + '%'}">88.5%</strong>
+                            </p>
+                        </div>
+
+                        <!-- Right Actions & QR Button -->
+                        <div class="d-flex flex-column align-items-end gap-2">
+                            <button type="button" class="btn btn-light btn-sm fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#scanQrModal">
+                                <i class="bi bi-qr-code-scan me-1 text-primary"></i> QR Attendance Check-In
+                            </button>
+                            <div th:if="${overallAttendance >= 75}" class="badge bg-success text-white px-3 py-1">
+                                <i class="bi bi-shield-check me-1"></i> Exam Criteria Fulfilled (&ge; 75%)
+                            </div>
+                            <div th:unless="${overallAttendance >= 75}" class="badge bg-danger text-white px-3 py-1">
+                                <i class="bi bi-exclamation-octagon me-1"></i> Below 75% Requirement
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Three Selectable Options: Day Wise, Overall and Subject Wise -->
+                <div class="px-4 py-2 bg-black bg-opacity-20 border-top border-white border-opacity-10">
+                    <ul class="nav nav-pills gap-2" id="attendanceMainTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link btn-sm text-white px-3 fw-semibold border-0"
+                                    th:classappend="${activeTab == null || activeTab == 'daywise' ? 'active bg-white text-primary shadow-sm' : 'bg-transparent text-white'}"
+                                    id="tab-daywise-btn" data-bs-toggle="pill" data-bs-target="#tab-daywise" type="button" role="tab">
+                                <i class="bi bi-calendar-date me-1"></i> Day Wise Attendance
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link btn-sm text-white px-3 fw-semibold border-0"
+                                    th:classappend="${activeTab == 'overall' ? 'active bg-white text-primary shadow-sm' : 'bg-transparent text-white'}"
+                                    id="tab-overall-btn" data-bs-toggle="pill" data-bs-target="#tab-overall" type="button" role="tab">
+                                <i class="bi bi-pie-chart-fill me-1"></i> Overall Attendance
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link btn-sm text-white px-3 fw-semibold border-0"
+                                    th:classappend="${activeTab == 'subjectwise' ? 'active bg-white text-primary shadow-sm' : 'bg-transparent text-white'}"
+                                    id="tab-subjectwise-btn" data-bs-toggle="pill" data-bs-target="#tab-subjectwise" type="button" role="tab">
+                                <i class="bi bi-journal-check me-1"></i> Subject Wise Attendance
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- TAB CONTENT -->
+            <div class="tab-content" id="attendanceMainTabContent">
+
+                <!-- VIEW 1: DAY WISE ATTENDANCE -->
+                <div class="tab-pane fade" th:classappend="${activeTab == null || activeTab == 'daywise' ? 'show active' : ''}" id="tab-daywise" role="tabpanel">
+
+                    <!-- Day-Wise Filters: Month & Date Selector with Search -->
+                    <div class="card-custom mb-4 bg-white border">
+                        <div class="card-custom-body py-3">
+                            <form th:action="@{/student/attendance}" method="get" class="row g-2 align-items-center">
+                                <input type="hidden" name="tab" value="daywise">
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Select Attendance Date</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                                        <input type="date" name="date" class="form-control" th:value="${selectedDate}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Academic Semester</label>
+                                    <select class="form-select form-select-sm" disabled>
+                                        <option th:text="'Semester ' + ${student.semester} + ' (Enrolled)'">Semester 3</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Section</label>
+                                    <select class="form-select form-select-sm" disabled>
+                                        <option th:text="${student.section != null ? student.section.name : 'Sec A'}">Sec A</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 col-sm-6 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold">
+                                        <i class="bi bi-search me-1"></i> Search Records
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- 7-Day Calendar Bar (Monday to Sunday) -->
+                    <div class="card-custom mb-4 bg-white border">
+                        <div class="card-custom-header py-2 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark small">
+                                <i class="bi bi-calendar-week text-primary me-2"></i>Weekly Calendar
+                            </span>
+                            <div class="d-flex gap-1">
+                                <a th:href="@{/student/attendance(date=${prevWeekDate}, tab='daywise')}" class="btn btn-xs btn-outline-secondary py-0 px-2 small">
+                                    <i class="bi bi-chevron-left"></i> Prev
+                                </a>
+                                <a th:href="@{/student/attendance(date=${todayDate}, tab='daywise')}" class="btn btn-xs btn-outline-primary py-0 px-2 small">
+                                    Today
+                                </a>
+                                <a th:href="@{/student/attendance(date=${nextWeekDate}, tab='daywise')}" class="btn btn-xs btn-outline-secondary py-0 px-2 small">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-custom-body p-3">
+                            <div class="d-flex gap-2 overflow-x-auto flex-nowrap pb-1" style="scrollbar-width: thin;">
+                                <a th:each="wd : ${weekDays}"
+                                   th:href="@{/student/attendance(date=${wd.date}, tab='daywise')}"
+                                   class="text-decoration-none flex-fill text-center p-2 px-3 rounded-3 transition border"
+                                   style="min-width: 95px;"
+                                   th:classappend="${wd.selected ? 'bg-primary text-white shadow-sm border-primary' : (wd.today ? 'bg-primary-subtle text-primary border-primary-subtle' : 'bg-light text-dark')}">
+                                    <div class="small text-uppercase" style="font-size: 0.7rem;"
+                                         th:classappend="${wd.selected ? 'text-white' : 'text-secondary'}"
+                                         th:text="${wd.shortDay}">MON</div>
+                                    <div class="fs-5 fw-bold lh-1 my-1"
+                                         th:classappend="${wd.selected ? 'text-white' : 'text-dark'}"
+                                         th:text="${wd.dayOfMonth}">07</div>
+                                    <div class="small" style="font-size: 0.68rem;">
+                                        <span th:if="${wd.classCount > 0}" class="badge"
+                                              th:classappend="${wd.selected ? 'bg-white text-primary' : 'bg-secondary-subtle text-dark'}"
+                                              th:text="${wd.classCount + ' Classes'}">2 Classes</span>
+                                        <span th:unless="${wd.classCount > 0}" class="badge bg-transparent"
+                                              th:classappend="${wd.selected ? 'text-white-50' : 'text-muted'}">Free</span>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scheduled Classes and Attendance Status Cards for Selected Date -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="bi bi-clock-history text-primary me-2"></i>Classes & Attendance for
+                            <span class="text-primary" th:text="${#temporals.format(selectedDate, 'EEEE, dd MMMM yyyy')}">Wednesday, 07 October</span>
+                        </h6>
+                        <span class="badge bg-light text-dark border" th:text="${#lists.size(dayWiseRecords)} + ' Scheduled Sessions'">2 Sessions</span>
+                    </div>
+
+                    <!-- Empty State for Day Wise -->
+                    <div th:if="${#lists.isEmpty(dayWiseRecords)}" class="card-custom bg-white border p-5 text-center text-muted">
+                        <i class="bi bi-calendar-x fs-1 d-block mb-3 text-secondary"></i>
+                        <h5>No scheduled classes or attendance sessions for this date</h5>
+                        <p class="small text-secondary mb-0">You have no timetable periods or recorded sessions on <span class="fw-semibold text-dark" th:text="${#temporals.format(selectedDate, 'EEEE, dd MMM yyyy')}">this date</span>.</p>
+                    </div>
+
+                    <!-- List of Class Attendance Cards -->
+                    <div class="row g-3" th:if="${!#lists.isEmpty(dayWiseRecords)}">
+                        <div class="col-12" th:each="r : ${dayWiseRecords}">
+                            <div class="card-custom bg-white border">
+                                <div class="card-custom-body p-4">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                        <div class="d-flex align-items-start gap-3">
+                                            <!-- Timing Badge -->
+                                            <div class="rounded-3 p-3 text-center border" style="min-width: 140px; background-color: #f8fafc;">
+                                                <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.7rem;">Time Slot</div>
+                                                <div class="fw-bold text-primary fs-6 mb-1" th:text="${r.timeSlot}">09:00 - 10:30</div>
+                                                <span class="badge bg-light text-dark border small" th:text="${r.roomNo}">Room 301</span>
+                                            </div>
+
+                                            <div>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                                    <span class="badge bg-primary px-2 py-1" th:text="${r.subjectCode}">CS301</span>
+                                                    <span class="badge" 
+                                                          th:classappend="${r.classType == 'Practical' || r.classType == 'Lab' ? 'bg-purple-subtle text-purple border' : (r.classType == 'Tutorial' ? 'bg-warning-subtle text-warning-emphasis border' : 'bg-info-subtle text-info border')}"
+                                                          th:text="${r.classType}">Lecture</span>
+                                                </div>
+
+                                                <!-- Subject Title (Clickable) -->
+                                                <h4 class="fw-bold mb-1 text-dark">
+                                                    <a th:if="${r.subjectId != null}" th:href="@{/student/subjects/{id}(id=${r.subjectId})}"
+                                                       class="text-decoration-none text-dark hover-primary"
+                                                       th:text="${r.subjectName}">Data Structures & Algorithms</a>
+                                                    <span th:unless="${r.subjectId != null}" th:text="${r.subjectName}">Subject Name</span>
+                                                </h4>
+
+                                                <div class="small text-muted">
+                                                    <i class="bi bi-person-badge me-1"></i> Faculty: 
+                                                    <strong class="text-dark" th:text="${r.facultyName}">Dr. Turing</strong>
+                                                    <span th:if="${r.remarks != null && !#strings.isEmpty(r.remarks)}">
+                                                        <span class="mx-2">•</span>
+                                                        <i class="bi bi-chat-left-text me-1"></i> <span th:text="${r.remarks}">Remarks</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Attendance Status Distinction: Present / Absent / Late / Not Recorded -->
+                                        <div class="text-end">
+                                            <div class="mb-2">
+                                                <span th:if="${'Present'.equalsIgnoreCase(r.status)}" class="badge bg-success-subtle text-success fs-6 px-3 py-2 border border-success-subtle">
+                                                    <i class="bi bi-check-circle-fill me-1"></i> Present
+                                                </span>
+                                                <span th:if="${'Late'.equalsIgnoreCase(r.status)}" class="badge bg-warning-subtle text-warning-emphasis fs-6 px-3 py-2 border border-warning-subtle">
+                                                    <i class="bi bi-clock-history me-1"></i> Late
+                                                </span>
+                                                <span th:if="${'Absent'.equalsIgnoreCase(r.status)}" class="badge bg-danger-subtle text-danger fs-6 px-3 py-2 border border-danger-subtle">
+                                                    <i class="bi bi-x-circle-fill me-1"></i> Absent
+                                                </span>
+                                                <span th:if="${'Not Recorded'.equalsIgnoreCase(r.status)}" class="badge bg-light text-muted fs-6 px-3 py-2 border">
+                                                    <i class="bi bi-hourglass-split me-1"></i> Not Recorded
+                                                </span>
+                                            </div>
+
+                                            <a th:if="${r.subjectId != null}" th:href="@{/student/subjects/{id}(id=${r.subjectId})}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye me-1"></i> Subject Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 2: OVERALL ATTENDANCE -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'overall' ? 'show active' : ''}" id="tab-overall" role="tabpanel">
+
+                    <!-- Attendance Period Banner -->
+                    <div class="card-custom mb-4 bg-white border">
+                        <div class="card-custom-body p-4">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                <div>
+                                    <div class="text-secondary small fw-bold text-uppercase mb-1">Attendance Evaluation Period</div>
+                                    <h4 class="fw-bold mb-1 text-dark">
+                                        <i class="bi bi-calendar3-range text-primary me-2"></i>
+                                        <span th:text="${attendanceBreakdown != null ? attendanceBreakdown.periodStart : '01 Aug 2026'}">01 Aug 2026</span>
+                                        <span class="mx-2 text-muted">&rarr;</span>
+                                        <span th:text="${attendanceBreakdown != null ? attendanceBreakdown.periodEnd : '15 Dec 2026'}">15 Dec 2026</span>
+                                    </h4>
+                                    <div class="small text-muted">
+                                        Student: <strong class="text-dark" th:text="${student.fullName}">Alex Morgan</strong> 
+                                        (<span th:text="${student.rollNo}">STU2025001</span>) &bull; 
+                                        Degree: <span th:text="${student.course != null ? student.course.courseName : 'Engineering'}">B.Tech</span>
+                                    </div>
+                                </div>
+
+                                <div class="text-end">
+                                    <span class="text-secondary small d-block">Overall Attendance</span>
+                                    <div class="display-6 fw-bold"
+                                         th:classappend="${attendanceBreakdown != null && attendanceBreakdown.attendancePercentage >= 75 ? 'text-success' : 'text-danger'}"
+                                         th:text="${attendanceBreakdown != null ? attendanceBreakdown.attendancePercentage + '%' : overallAttendance + '%'}">88.5%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metrics Grid: Delivered, Attended, Lecture vs Practical Breakdown -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="text-secondary small fw-medium text-uppercase">Total Classes Delivered</span>
+                                        <h2 class="fw-bold mb-0 mt-1" th:text="${attendanceBreakdown != null ? attendanceBreakdown.totalDelivered : 0}">20</h2>
+                                        <small class="text-muted">Faculty sessions conducted</small>
+                                    </div>
+                                    <div class="stat-icon-wrapper stat-icon-primary">
+                                        <i class="bi bi-collection-play-fill"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="text-secondary small fw-medium text-uppercase">Total Classes Attended</span>
+                                        <h2 class="fw-bold mb-0 mt-1 text-success" th:text="${attendanceBreakdown != null ? attendanceBreakdown.totalAttended : 0}">18</h2>
+                                        <small class="text-success fw-semibold">Present / Late records</small>
+                                    </div>
+                                    <div class="stat-icon-wrapper stat-icon-success">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="text-secondary small fw-medium text-uppercase">Absences Recorded</span>
+                                        <h2 class="fw-bold mb-0 mt-1 text-danger" th:text="${attendanceBreakdown != null ? (attendanceBreakdown.totalDelivered - attendanceBreakdown.totalAttended) : 0}">2</h2>
+                                        <small class="text-danger fw-semibold">Missed class sessions</small>
+                                    </div>
+                                    <div class="stat-icon-wrapper stat-icon-danger">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Separate Statistics for Lectures and Practicals (Requirement 9A) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card-custom bg-white border h-100">
+                                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-dark"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Lectures Statistics</span>
+                                    <span class="badge bg-primary px-3 py-1" th:text="${attendanceBreakdown != null ? attendanceBreakdown.lecturePercentage + '%' : '100%'}">90%</span>
+                                </div>
+                                <div class="card-custom-body p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-secondary">Lectures Attended:</span>
+                                        <span class="fw-bold text-dark" th:text="${attendanceBreakdown != null ? attendanceBreakdown.lectureAttended + ' / ' + attendanceBreakdown.lectureDelivered : '0 / 0'}">14 / 15</span>
+                                    </div>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div class="progress-bar bg-primary" role="progressbar"
+                                             th:style="'width: ' + (${attendanceBreakdown != null ? attendanceBreakdown.lecturePercentage : 100}) + '%'"></div>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Theoretical lectures and classroom sessions tracked across all enrolled subjects.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card-custom bg-white border h-100">
+                                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold text-dark"><i class="bi bi-cpu-fill text-purple me-2" style="color: #7e22ce;"></i>Practicals / Labs Statistics</span>
+                                    <span class="badge px-3 py-1" style="background-color: #7e22ce; color: white;" th:text="${attendanceBreakdown != null ? attendanceBreakdown.practicalPercentage + '%' : '100%'}">80%</span>
+                                </div>
+                                <div class="card-custom-body p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-secondary">Practicals Attended:</span>
+                                        <span class="fw-bold text-dark" th:text="${attendanceBreakdown != null ? attendanceBreakdown.practicalAttended + ' / ' + attendanceBreakdown.practicalDelivered : '0 / 0'}">4 / 5</span>
+                                    </div>
+                                    <div class="progress mb-3" style="height: 10px;">
+                                        <div class="progress-bar" style="background-color: #7e22ce;" role="progressbar"
+                                             th:style="'width: ' + (${attendanceBreakdown != null ? attendanceBreakdown.practicalPercentage : 100}) + '%'"></div>
+                                    </div>
+                                    <div class="small text-muted">
+                                        Hands-on laboratory sessions and practical workshop attendance.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subject-Wise Attendance Cards in Overall Tab -->
+                    <div class="card-custom bg-white border">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-grid-fill text-primary me-2"></i>Subject-Wise Attendance Breakdown</span>
+                        </div>
+                        <div class="card-custom-body p-4">
+                            <div class="row g-3">
+                                <div class="col-md-6 col-lg-4" th:each="att : ${subjectAttendance}">
+                                    <div class="p-3 rounded-3 border bg-light-subtle h-100 d-flex flex-column justify-content-between">
+                                        <div>
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span class="badge bg-primary px-2 py-1" th:text="${att.subjectCode}">CS301</span>
+                                                <span class="fw-bold fs-6"
+                                                      th:classappend="${att.attendancePercentage >= 75 ? 'text-success' : 'text-danger'}"
+                                                      th:text="${att.attendancePercentage + '%'}">85%</span>
+                                            </div>
+                                            <h6 class="fw-bold text-dark mb-2">
+                                                <a th:href="@{/student/subjects/{id}(id=${att.subjectId})}" class="text-decoration-none text-dark hover-primary" th:text="${att.subjectName}">Data Structures</a>
+                                            </h6>
+                                            <div class="progress mb-2" style="height: 6px;">
+                                                <div class="progress-bar" 
+                                                     th:classappend="${att.attendancePercentage >= 75 ? 'bg-success' : 'bg-danger'}"
+                                                     role="progressbar" 
+                                                     th:style="'width: ' + ${att.attendancePercentage} + '%'"></div>
+                                            </div>
+                                            <div class="small text-muted d-flex justify-content-between">
+                                                <span>Attended: <strong class="text-dark" th:text="${att.attendedClasses}">17</strong> / <span th:text="${att.totalClasses}">20</span></span>
+                                                <span>Lectures: <span th:text="${att.lectureAttended}">14</span></span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 pt-2 border-top">
+                                            <a th:href="@{/student/subjects/{id}(id=${att.subjectId})}" class="btn btn-outline-primary btn-sm w-100">
+                                                View Subject Attendance
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW 3: SUBJECT WISE ATTENDANCE -->
+                <div class="tab-pane fade" th:classappend="${activeTab == 'subjectwise' ? 'show active' : ''}" id="tab-subjectwise" role="tabpanel">
+
+                    <!-- Subject Wise Table with Lecture vs Practical Separate Statistics -->
+                    <div class="card-custom bg-white border">
+                        <div class="card-custom-header d-flex justify-content-between align-items-center">
+                            <div class="fw-bold text-dark">
+                                <i class="bi bi-bar-chart-fill text-primary me-2"></i>Subject-Wise Attendance Registry
+                            </div>
+                            <span class="badge bg-light text-dark border" th:text="${#lists.size(subjectAttendance)} + ' Subjects Enrolled'">3 Subjects</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Subject Name & Code</th>
+                                        <th>Total Delivered</th>
+                                        <th>Total Attended</th>
+                                        <th>Lectures (Att/Del)</th>
+                                        <th>Practicals (Att/Del)</th>
+                                        <th>Attendance Rate</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="att : ${subjectAttendance}">
+                                        <td>
+                                            <div class="fw-bold text-dark">
+                                                <a th:href="@{/student/subjects/{id}(id=${att.subjectId})}" class="text-decoration-none text-dark hover-primary" th:text="${att.subjectName}">Data Structures</a>
+                                            </div>
+                                            <small class="badge bg-primary-subtle text-primary" th:text="${att.subjectCode}">CS301</small>
+                                        </td>
+                                        <td class="fw-semibold text-dark" th:text="${att.totalClasses}">20</td>
+                                        <td class="fw-bold text-success" th:text="${att.attendedClasses}">18</td>
+                                        <td class="small text-secondary" th:text="${att.lectureAttended} + ' / ' + ${att.lectureClasses}">14 / 15</td>
+                                        <td class="small text-secondary" th:text="${att.practicalAttended} + ' / ' + ${att.practicalClasses}">4 / 5</td>
+                                        <td style="min-width: 140px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar" 
+                                                         th:classappend="${att.attendancePercentage >= 75 ? 'bg-success' : 'bg-danger'}"
+                                                         role="progressbar" 
+                                                         th:style="'width: ' + ${att.attendancePercentage} + '%'"></div>
+                                                </div>
+                                                <span class="fw-bold small" 
+                                                      th:classappend="${att.attendancePercentage >= 75 ? 'text-success' : 'text-danger'}"
+                                                      th:text="${att.attendancePercentage + '%'}">90%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span th:if="${att.attendancePercentage >= 75}" class="badge bg-success-subtle text-success">
+                                                <i class="bi bi-check2 me-1"></i> Eligible
+                                            </span>
+                                            <span th:unless="${att.attendancePercentage >= 75}" class="badge bg-danger-subtle text-danger">
+                                                <i class="bi bi-exclamation-octagon me-1"></i> Shortage
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a th:href="@{/student/subjects/{id}(id=${att.subjectId})}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i> Details
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(subjectAttendance)}">
+                                        <td colspan="8" class="text-center text-muted py-4">No enrolled subjects found.</td>
+                                    </tr>
+                                </tbody>
+                                <!-- Overall Total at the Bottom (Requirement 9A) -->
+                                <tfoot class="table-light fw-bold" th:if="${attendanceBreakdown != null}">
+                                    <tr>
+                                        <td>OVERALL TOTAL</td>
+                                        <td th:text="${attendanceBreakdown.totalDelivered}">20</td>
+                                        <td class="text-success" th:text="${attendanceBreakdown.totalAttended}">18</td>
+                                        <td th:text="${attendanceBreakdown.lectureAttended} + ' / ' + ${attendanceBreakdown.lectureDelivered}">14 / 15</td>
+                                        <td th:text="${attendanceBreakdown.practicalAttended} + ' / ' + ${attendanceBreakdown.practicalDelivered}">4 / 5</td>
+                                        <td class="fs-6" 
+                                            th:classappend="${attendanceBreakdown.attendancePercentage >= 75 ? 'text-success' : 'text-danger'}"
+                                            th:text="${attendanceBreakdown.attendancePercentage + '%'}">88.5%</td>
+                                        <td>
+                                            <span th:if="${attendanceBreakdown.attendancePercentage >= 75}" class="badge bg-success text-white">Eligible</span>
+                                            <span th:unless="${attendanceBreakdown.attendancePercentage >= 75}" class="badge bg-danger text-white">Debarred</span>
+                                        </td>
+                                        <td class="text-end text-muted small">Summary</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Scan / Enter QR Attendance Code -->
+<div class="modal fade" id="scanQrModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/student/attendance/qr/mark}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-qr-code-scan text-primary me-2"></i>QR Code Check-In</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center p-3 mb-3 bg-light rounded">
+                        <i class="bi bi-qr-code fs-1 text-primary mb-2 d-block"></i>
+                        <p class="small text-muted mb-0">Enter the temporary session token displayed by your instructor on the classroom screen.</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Session Token / QR Value</label>
+                        <input type="text" name="token" class="form-control font-monospace" required placeholder="e.g. 1a2b3c4d-5e6f-..." autocomplete="off">
+                        <small class="text-muted" style="font-size:0.75rem;">Backend verifies your authenticated ID, enrollment in class/section, active session window and eliminates duplicates.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle-fill me-1"></i> Record Attendance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

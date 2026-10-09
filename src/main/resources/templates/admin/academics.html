@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Academics & Structure')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='academics')}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Academic Structure & Curriculum')}"></nav>
+
+        <div class="page-container">
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-pills mb-4 gap-2" id="academicTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active fw-semibold" id="departments-tab" data-bs-toggle="tab" data-bs-target="#departmentsPane" type="button">
+                        <i class="bi bi-building me-1"></i> Departments (<span th:text="${#lists.size(departments)}">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="courses-tab" data-bs-toggle="tab" data-bs-target="#coursesPane" type="button">
+                        <i class="bi bi-journal-bookmark-fill me-1"></i> Degree Courses (<span th:text="${#lists.size(courses)}">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjectsPane" type="button">
+                        <i class="bi bi-book-half me-1"></i> Subjects & Syllabus (<span th:text="${#lists.size(subjects)}">0</span>)
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="academicTabsContent">
+                <!-- Tab 1: Departments -->
+                <div class="tab-pane fade show active" id="departmentsPane" role="tabpanel">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-building text-primary me-2"></i>Academic Departments</span>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDeptModal">
+                                <i class="bi bi-plus-circle me-1"></i> Add Department
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Department Name</th>
+                                        <th>Head of Department (HOD)</th>
+                                        <th>Description</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="d : ${departments}">
+                                        <td><span class="badge bg-primary-subtle text-primary fw-bold" th:text="${d.code}">CS</span></td>
+                                        <td class="fw-bold text-dark" th:text="${d.name}">Computer Science</td>
+                                        <td class="fw-semibold text-secondary" th:text="${d.hod}">Dr. Alan</td>
+                                        <td class="small text-muted" th:text="${d.description}">Description</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-danger" th:data-url="@{'/api/admin/departments/' + ${d.id}}" data-type="Department" onclick="deleteEntity(this.getAttribute('data-url'), this.getAttribute('data-type'))">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Courses -->
+                <div class="tab-pane fade" id="coursesPane" role="tabpanel">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Degree Programs & Courses</span>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                                <i class="bi bi-plus-circle me-1"></i> Add Course
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Course Title</th>
+                                        <th>Department</th>
+                                        <th>Duration</th>
+                                        <th>Total Semesters</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="c : ${courses}">
+                                        <td><span class="badge bg-info-subtle text-info fw-bold" th:text="${c.code}">BTECH</span></td>
+                                        <td class="fw-bold text-dark" th:text="${c.name}">B.Tech</td>
+                                        <td th:text="${c.department != null ? c.department.name : 'N/A'}">Dept</td>
+                                        <td th:text="${c.durationYears + ' Years'}">4 Years</td>
+                                        <td th:text="${c.totalSemesters + ' Semesters'}">8 Semesters</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-danger" th:data-url="@{'/api/admin/courses/' + ${c.id}}" data-type="Course" onclick="deleteEntity(this.getAttribute('data-url'), this.getAttribute('data-type'))">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Subjects -->
+                <div class="tab-pane fade" id="subjectsPane" role="tabpanel">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-book-half text-primary me-2"></i>Registered Subjects & Syllabus</span>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+                                <i class="bi bi-plus-circle me-1"></i> Add Subject
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Subject Name</th>
+                                        <th>Course & Sem</th>
+                                        <th>Department</th>
+                                        <th>Credits</th>
+                                        <th>Faculty Instructor</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="s : ${subjects}">
+                                        <td><span class="badge bg-secondary-subtle text-secondary fw-bold" th:text="${s.code}">CS301</span></td>
+                                        <td class="fw-bold text-dark" th:text="${s.name}">Algorithms</td>
+                                        <td>
+                                             <span class="fw-semibold text-dark" th:text="${s.course != null ? s.course.code : 'N/A'}">BTECH</span>
+                                            <span class="badge bg-light text-muted border ms-1" th:text="'Sem ' + ${s.semester}">Sem 3</span>
+                                        </td>
+                                        <td class="small" th:text="${s.department != null ? s.department.code : 'N/A'}">CS</td>
+                                        <td><span class="badge bg-primary text-white" th:text="${s.credits}">4</span></td>
+                                        <td class="fw-semibold text-secondary" th:text="${s.teacher != null ? s.teacher.name : 'Unassigned'}">Prof Miller</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-danger" th:data-url="@{'/api/admin/subjects/' + ${s.id}}" data-type="Subject" onclick="deleteEntity(this.getAttribute('data-url'), this.getAttribute('data-type'))">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Department -->
+<div class="modal fade" id="addDeptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Create Academic Department</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createDeptForm" onsubmit="handleCreateDept(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Code (e.g. CS, IT, ECE) <span class="text-danger">*</span></label>
+                        <input type="text" id="deptCode" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Department Name <span class="text-danger">*</span></label>
+                        <input type="text" id="deptName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Head of Department (HOD)</label>
+                        <input type="text" id="deptHod" class="form-control" placeholder="Dr. Jane Doe">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Description</label>
+                        <textarea id="deptDesc" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Department</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Course -->
+<div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Create Degree Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createCourseForm" onsubmit="handleCreateCourse(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Course Code (e.g. BTECH-CSE) <span class="text-danger">*</span></label>
+                        <input type="text" id="courseCode" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Full Course Title <span class="text-danger">*</span></label>
+                        <input type="text" id="courseName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Department <span class="text-danger">*</span></label>
+                        <select id="courseDept" class="form-select" required>
+                            <option value="">Select Department</option>
+                            <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}"></option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Duration (Years)</label>
+                            <input type="number" id="courseDuration" class="form-control" value="4" min="1" max="6" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Total Semesters</label>
+                            <input type="number" id="courseSemesters" class="form-control" value="8" min="1" max="12" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Course</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Add Subject -->
+<div class="modal fade" id="addSubjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Create Syllabus Subject</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createSubjectForm" onsubmit="handleCreateSubject(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Subject Code (e.g. CS401) <span class="text-danger">*</span></label>
+                        <input type="text" id="subCode" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Subject Name <span class="text-danger">*</span></label>
+                        <input type="text" id="subName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Department <span class="text-danger">*</span></label>
+                        <select id="subDept" class="form-select" required>
+                            <option value="">Select Department</option>
+                            <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}"></option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Course <span class="text-danger">*</span></label>
+                        <select id="subCourse" class="form-select" required>
+                            <option value="">Select Course</option>
+                            <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.name}"></option>
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Semester</label>
+                            <select id="subSem" class="form-select">
+                                <option th:each="s : ${#numbers.sequence(1, 8)}" th:value="${s}" th:text="'Sem ' + ${s}"></option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Credits</label>
+                            <input type="number" id="subCredits" class="form-control" value="4" min="1" max="10">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Assigned Teacher</label>
+                        <select id="subTeacher" class="form-select">
+                            <option value="">Select Teacher (Optional)</option>
+                            <option th:each="t : ${teachers}" th:value="${t.id}" th:text="${t.name}"></option>
+                        </select>
+                    </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Subject</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+
+<script>
+async function handleCreateDept(e) {
+    e.preventDefault();
+    const payload = {
+        code: document.getElementById('deptCode').value,
+        name: document.getElementById('deptName').value,
+        hod: document.getElementById('deptHod').value,
+        description: document.getElementById('deptDesc').value
+    };
+    try {
+        const response = await fetch('/api/admin/departments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            showToast('Department added!');
+            setTimeout(() => window.location.reload(), 700);
+        } else {
+            showToast('Failed to add department', true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+
+async function handleCreateCourse(e) {
+    e.preventDefault();
+    const payload = {
+        code: document.getElementById('courseCode').value,
+        name: document.getElementById('courseName').value,
+        department: { id: parseInt(document.getElementById('courseDept').value) },
+        durationYears: parseInt(document.getElementById('courseDuration').value),
+        totalSemesters: parseInt(document.getElementById('courseSemesters').value)
+    };
+    try {
+        const response = await fetch('/api/admin/courses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            showToast('Course created!');
+            setTimeout(() => window.location.reload(), 700);
+        } else {
+            showToast('Failed to create course', true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+
+async function handleCreateSubject(e) {
+    e.preventDefault();
+    const teacherVal = document.getElementById('subTeacher').value;
+    const payload = {
+        code: document.getElementById('subCode').value,
+        name: document.getElementById('subName').value,
+        department: { id: parseInt(document.getElementById('subDept').value) },
+        course: { id: parseInt(document.getElementById('subCourse').value) },
+        semester: parseInt(document.getElementById('subSem').value),
+        credits: parseInt(document.getElementById('subCredits').value),
+        teacher: teacherVal ? { id: parseInt(teacherVal) } : null
+    };
+    try {
+        const response = await fetch('/api/admin/subjects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+            showToast('Subject created!');
+            setTimeout(() => window.location.reload(), 700);
+        } else {
+            showToast('Failed to create subject', true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+
+// Auto-activate tab based on URL hash (e.g., #courses, #departments, #subjects) or query param
+document.addEventListener('DOMContentLoaded', function() {
+    function activateTabFromUrl() {
+        const hash = (window.location.hash || '').toLowerCase();
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = (urlParams.get('tab') || '').toLowerCase();
+
+        let tabBtn = null;
+        if (hash === '#courses' || tabParam === 'courses') {
+            tabBtn = document.getElementById('courses-tab');
+        } else if (hash === '#subjects' || tabParam === 'subjects') {
+            tabBtn = document.getElementById('subjects-tab');
+        } else if (hash === '#departments' || tabParam === 'departments') {
+            tabBtn = document.getElementById('departments-tab');
+        }
+
+        if (tabBtn && typeof bootstrap !== 'undefined' && bootstrap.Tab) {
+            bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+        }
+    }
+
+    activateTabFromUrl();
+    window.addEventListener('hashchange', activateTabFromUrl);
+});
+</script>
+</body>
+</html>

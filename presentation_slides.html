@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Review 1 - Student Management & University ERP System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --accent: #06b6d4;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 10% 20%, #1e1b4b 0%, #0f172a 90%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header.top-bar {
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            z-index: 10;
+        }
+
+        .brand-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #fff;
+        }
+
+        .brand-badge i {
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+
+        .slide-counter {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            color: var(--accent);
+            border: 1px solid var(--card-border);
+        }
+
+        main.slide-viewport {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: 1150px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(16px);
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            min-height: 580px;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .slide-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        h1.title-hero {
+            font-size: 2.8rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2.slide-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+
+        p.lead {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        .feature-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 1.8rem;
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .feature-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .badge-pill {
+            display: inline-block;
+            background: rgba(79, 70, 229, 0.25);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+
+        .code-box {
+            background: #020617;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            padding: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        table.custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        table.custom-table th, table.custom-table td {
+            padding: 0.85rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        table.custom-table th {
+            color: var(--accent);
+            font-weight: 600;
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        footer.nav-bar {
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.9);
+            border-top: 1px solid var(--card-border);
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid var(--card-border);
+            padding: 0.6rem 1.4rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .nav-btn.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .nav-btn.primary:hover {
+            background: var(--primary-dark);
+        }
+
+        @media print {
+            body {
+                overflow: visible;
+                background: #fff;
+                color: #000;
+            }
+            .slide {
+                display: block !important;
+                page-break-after: always;
+                box-shadow: none;
+                border: 1px solid #ccc;
+                color: #000;
+                background: #fff;
+                margin-bottom: 2rem;
+            }
+            header.top-bar, footer.nav-bar {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="top-bar">
+        <div class="brand-badge">
+            <i class="bi bi-mortarboard-fill"></i>
+            <span>University ERP | Academic Review 1</span>
+        </div>
+        <div class="slide-counter" id="counterDisplay">Slide 1 / 8</div>
+        <div>
+            <button class="nav-btn" onclick="window.print()" title="Print / Export to PDF">
+                <i class="bi bi-file-earmark-pdf"></i> Save as PDF
+            </button>
+        </div>
+    </header>
+
+    <!-- Slide Container -->
+    <main class="slide-viewport">
+
+        <!-- Slide 1: Title -->
+        <section class="slide active">
+            <span class="slide-tag"><i class="bi bi-award-fill"></i> Project Review 1 Submission</span>
+            <h1 class="title-hero">Student Management &amp; University ERP System</h1>
+            <p class="lead">A modular, enterprise-grade academic portal built with Spring Boot, MySQL, and responsive Bootstrap 5 architecture.</p>
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <span class="badge-pill">Java 17 LTS</span>
+                <span class="badge-pill">Spring Boot 3.3.4</span>
+                <span class="badge-pill">Spring Security 6</span>
+                <span class="badge-pill">MySQL 8.0</span>
+                <span class="badge-pill">JDBC &amp; Hibernate</span>
+                <span class="badge-pill">Thymeleaf</span>
+                <span class="badge-pill">Bootstrap 5.3.3</span>
+            </div>
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-muted);">
+                <div><strong>Domain:</strong> Java Web Application Development</div>
+                <div><strong>Key Focus:</strong> Project Structure, Database Design, JDBC, &amp; UI/UX</div>
+            </div>
+        </section>
+
+        <!-- Slide 2: Problem Understanding & Scope -->
+        <section class="slide">
+            <span class="slide-tag"><i class="bi bi-lightbulb-fill"></i> Rubric: Problem Understanding &amp; Solution Design</span>
+            <h2 class="slide-title">Problem Statement &amp; Solution Architecture</h2>
+            <div class="grid-2">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <div class="feature-title">The Challenge</div>
+                    <div class="feature-desc">
+                        Traditional educational systems struggle with scattered paper records, manual attendance leakage, disparate grading spreadsheets, and lack of real-time student self-service portals.
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-check-circle-fill"></i></div>
+                    <div class="feature-title">The Proposed Solution</div>
+                    <div class="feature-desc">
+                        A unified three-tier ERP architecture featuring role-segregated portals:
+                        <br>&bull; <strong>Admin Portal:</strong> Institute governance, master timetables &amp; fee records.
+                        <br>&bull; <strong>Faculty Portal:</strong> Dynamic QR attendance, grading, and assignments.
+                        <br>&bull; <strong>Student Portal:</strong> QR scan attendance, marksheets, and digital ID card.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 3: Project Structure & Modularity -->
+        <section class="slide">
+            <span class="slide-tag"><i class="bi bi-folder-fill"></i> Rubric: Project Structure &amp; Core Java</span>
+            <h2 class="slide-title">Modular Multi-Layered Architecture</h2>
+            <div class="grid-3">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-layers-fill"></i></div>
+                    <div class="feature-title">Layered Structure</div>
+                    <div class="feature-desc">
+                        Strict separation of concerns adhering to SOLID principles:
+                        <br>&bull; <code>controller/</code>: Request handling
+                        <br>&bull; <code>service/</code>: Business logic
+                        <br>&bull; <code>repository/</code>: Data persistence
+                        <br>&bull; <code>dto/</code>: Clean request/response mapping
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-cpu-fill"></i></div>
+                    <div class="feature-title">Core Java Features</div>
+                    <div class="feature-desc">
+                        &bull; <strong>OOP:</strong> Polymorphism &amp; Interfaces in Repositories
+                        <br>&bull; <strong>Exception Handling:</strong> Centralized <code>@ControllerAdvice</code>
+                        <br>&bull; <strong>Collections &amp; Generics:</strong> Typesafe collections, Maps, and Optional
+                        <br>&bull; <strong>Java Streams:</strong> Functional data filtering
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-shield-lock-fill"></i></div>
+                    <div class="feature-title">Enterprise Security</div>
+                    <div class="feature-desc">
+                        &bull; BCrypt password hashing
+                        <br>&bull; Role-Based Access Control (RBAC)
+                        <br>&bull; Custom Auth Handlers
+                        <br>&bull; Secure Session &amp; CSRF handling
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 4: Database Design (Schema & Entities) -->
+        <section class="slide">
+            <span class="slide-tag"><i class="bi bi-database-fill"></i> Rubric: Database Design (28 Entities)</span>
+            <h2 class="slide-title">Relational Database Design &amp; Schema</h2>
+            <p class="lead">Normalized 3NF relational schema with strict Foreign Key integrity and automated auditing.</p>
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Domain Group</th>
+                        <th>Core Tables / Entities</th>
+                        <th>Key Relationships &amp; Constraints</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>People &amp; Auth</strong></td>
+                        <td><code>users</code>, <code>students</code>, <code>teachers</code>, <code>tokens</code></td>
+                        <td>One-to-One with User, Unique emails, account verification tokens</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Academics</strong></td>
+                        <td><code>departments</code>, <code>courses</code>, <code>sections</code>, <code>subjects</code></td>
+                        <td>Hierarchical mapping: Dept &rarr; Course &rarr; Section &rarr; Subject</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Classroom Operations</strong></td>
+                        <td><code>attendance</code>, <code>qr_sessions</code>, <code>timetable_entries</code></td>
+                        <td>Composite uniqueness (Student + Subject + Date), Real-time QR expiration</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Examinations &amp; Finance</strong></td>
+                        <td><code>marks</code>, <code>exam_results</code>, <code>fees</code>, <code>grievances</code></td>
+                        <td>Auto-calculated GPA, Transaction tracking, Ticket resolution logs</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Slide 5: Database Connectivity & JDBC Integration -->
+        <section class="slide">
+            <span class="slide-tag"><i class="bi bi-plug-fill"></i> Rubric: Database Integration (JDBC)</span>
+            <h2 class="slide-title">Robust JDBC Connectivity &amp; Operations</h2>
+            <div class="grid-2">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-diagram-2-fill"></i></div>
+                    <div class="feature-title">Dual Data Access Architecture</div>
+                    <div class="feature-desc">
+                        1. <strong>Direct JDBC Implementation:</strong>
+                        <br>&bull; <code>JdbcDatabaseConnection.java</code> manages pooled &amp; direct driver connections.
+                        <br>&bull; <code>StudentJdbcRepositoryImpl.java</code> executes raw parameterized SQL queries with <code>PreparedStatement</code> and <code>ResultSet</code>.
+                        <br><br>
+                        2. <strong>Spring Data JPA &amp; Hibernate:</strong>
+                        <br>&bull; High-level ORM persistence with HikariCP connection pooling.
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-title" style="margin-bottom: 0.5rem;"><i class="bi bi-code-slash"></i> Live JDBC Diagnostics Endpoint</div>
+                    <div class="code-box">
+GET /api/diagnostics/jdbc/status
+Response:
+{
+  "status": "SUCCESS",
+  "jdbcConnected": true,
+  "databaseProduct": "MySQL",
+  "driverName": "MySQL Connector/J",
+  "totalStudentsCount": 3
+}
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem;">
+                        Prevents SQL Injection via prepared statement parameters and handles <code>SQLException</code> systematically.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 6: UI/UX Design & Responsiveness -->
+        <section class="slide">
+            <span class="slide-tag"><i class="bi bi-palette-fill"></i> Rubric: User Interface &amp; Responsiveness</span>
+            <h2 class="slide-title">Modern UI/UX &amp; Aesthetic Principles</h2>
+            <div class="grid-3">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-phone-fill"></i></div>
+                    <div class="feature-title">100% Responsive Design</div>
+                    <div class="feature-desc">
+                        Bootstrap 5.3.3 grid system with offcanvas mobile navigations, collapsible sidebars, and adaptive tables for smart devices.
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-brush-fill"></i></div>
+                    <div class="feature-title">Modern Aesthetics</div>
+                    <div class="feature-desc">
+                        Tailored color palettes, sleek typography (Google Inter font), glassmorphic stat widgets, and micro-hover interactions.
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <div class="feature-title">Interactive Elements</div>
+                    <div class="feature-desc">
+                        Dynamic QR code attendance generator, real-time client-side GPA preview, and inline server-generated PDF receipts.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 7: Web Integration & Servlets -->
+        <section class="slide">
+            <span class="slide-tag"><i class="bi bi-globe2"></i> Rubric: Servlets &amp; Web Integration</span>
+            <h2 class="slide-title">Servlets, RESTful APIs, &amp; MVC Flow</h2>
+            <div class="grid-2">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-arrow-left-right"></i></div>
+                    <div class="feature-title">Servlet Front Controller (DispatcherServlet)</div>
+                    <div class="feature-desc">
+                        Underneath Spring MVC, incoming HTTP requests route through the standard Java Servlet specification:
+                        <br>&bull; <strong>Front Controller Pattern:</strong> <code>DispatcherServlet</code> receives client requests.
+                        <br>&bull; <strong>Handler Mapping:</strong> Resolves URL to controller methods.
+                        <br>&bull; <strong>View Resolver:</strong> Renders Thymeleaf templates with context models.
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                    <div class="feature-title">Web &amp; Media Services</div>
+                    <div class="feature-desc">
+                        &bull; <strong>Multipart File Uploads:</strong> Profile pictures, syllabus materials, and assignment docs.
+                        <br>&bull; <strong>Server-side PDF Generation:</strong> Real-time marksheets, ID cards, and receipts via LibrePDF.
+                        <br>&bull; <strong>RESTful APIs:</strong> JSON endpoints for mobile/AJAX integration under <code>/api/**</code>.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Slide 8: Summary & Demonstration -->
+        <section class="slide">
+            <span class="slide-tag"><i class="bi bi-check2-all"></i> Review 1 Compliance Summary</span>
+            <h2 class="slide-title">Conclusion &amp; Live Project Demo</h2>
+            <div class="grid-2">
+                <div class="feature-card">
+                    <div class="feature-title">Evaluation Criteria Checklist</div>
+                    <div class="feature-desc">
+                        &bull; <strong>Project Structure:</strong> Standard Maven Layered Architecture &check;
+                        <br>&bull; <strong>Database Design:</strong> 28 Normalized Relational Entities &check;
+                        <br>&bull; <strong>Database Connectivity:</strong> MySQL JDBC Driver + HikariCP &check;
+                        <br>&bull; <strong>UI/UX &amp; Responsiveness:</strong> Bootstrap 5 Multi-Portal System &check;
+                        <br>&bull; <strong>Code Quality:</strong> Modular, OOP-compliant, Exception Handled &check;
+                    </div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-title">Live Demonstration Steps</div>
+                    <div class="feature-desc">
+                        1. <strong>Admin Login:</strong> <code>admin</code> / <code>Admin@123</code> &rarr; Master Dashboard
+                        <br>2. <strong>Faculty Login:</strong> <code>david.miller@college.edu</code> &rarr; Dynamic QR Attendance
+                        <br>3. <strong>Student Login:</strong> <code>alex.morgan@student.edu</code> &rarr; Marksheet PDF Download
+                        <br>4. <strong>Direct JDBC Check:</strong> <code>/api/diagnostics/jdbc/status</code>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem; text-align: center; color: var(--accent); font-weight: 600;">
+                Ready for Live Questions &amp; Code Review
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Controls -->
+    <footer class="nav-bar">
+        <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">
+            <i class="bi bi-chevron-left"></i> Previous
+        </button>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">
+            Tip: Press <kbd style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 4px;">&larr;</kbd> and <kbd style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 4px;">&rarr;</kbd> arrow keys to navigate
+        </span>
+        <button class="nav-btn primary" id="nextBtn" onclick="changeSlide(1)">
+            Next <i class="bi bi-chevron-right"></i>
+        </button>
+    </footer>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                }
+            });
+            document.getElementById('counterDisplay').textContent = `Slide ${currentSlide + 1} / ${totalSlides}`;
+            document.getElementById('prevBtn').disabled = (currentSlide === 0);
+            document.getElementById('nextBtn').disabled = (currentSlide === totalSlides - 1);
+            if (currentSlide === 0) {
+                document.getElementById('prevBtn').style.opacity = '0.5';
+            } else {
+                document.getElementById('prevBtn').style.opacity = '1';
+            }
+        }
+
+        function changeSlide(direction) {
+            const next = currentSlide + direction;
+            if (next >= 0 && next < totalSlides) {
+                currentSlide = next;
+                updateSlide();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            }
+        });
+
+        updateSlide();
+    </script>
+</body>
+</html>

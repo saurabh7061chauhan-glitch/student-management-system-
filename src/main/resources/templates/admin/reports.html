@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Institutional Reports & Analytics')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='reports')}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Reports & Institutional Analytics')}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">University Analytics & Executive Reports</h4>
+                    <p class="text-secondary small mb-0">Multi-dimensional institutional performance metrics, student retention, attendance compliance, financial recovery, and academic pass rates.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/admin/reports/export/csv(departmentId=${selectedDepartmentId}, courseId=${selectedCourseId}, semester=${selectedSemester})}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-file-earmark-spreadsheet me-1 text-success"></i> Export CSV
+                    </a>
+                    <a th:href="@{/admin/reports/export/pdf(departmentId=${selectedDepartmentId}, courseId=${selectedCourseId}, semester=${selectedSemester})}" class="btn btn-primary btn-sm" target="_blank">
+                        <i class="bi bi-file-earmark-pdf-fill me-1 text-danger"></i> Executive PDF Report
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filters Bar -->
+            <div class="card-custom mb-4 p-3">
+                <form th:action="@{/admin/reports}" method="get" class="row g-2 align-items-center m-0">
+                    <div class="col-md-4">
+                        <select name="departmentId" class="form-select">
+                            <option value="">-- All Departments --</option>
+                            <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}" th:selected="${selectedDepartmentId == d.id}">Dept</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="courseId" class="form-select">
+                            <option value="">-- All Degree Programs --</option>
+                            <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.courseName}" th:selected="${selectedCourseId == c.id}">Course</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="semester" class="form-select">
+                            <option value="">-- All Semesters --</option>
+                            <option th:each="sem : ${#numbers.sequence(1, 8)}" th:value="${sem}" th:text="'Semester ' + ${sem}" th:selected="${selectedSemester == sem}">Sem</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel-fill me-1"></i> Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Executive KPI Metric Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-2">
+                    <div class="stat-card p-3">
+                        <span class="text-secondary small fw-medium text-uppercase">Enrolled Students</span>
+                        <h3 class="fw-bold mb-0 mt-1 text-primary" th:text="${analytics.totalStudents}">0</h3>
+                        <small class="text-muted">Total Active Roster</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card p-3">
+                        <span class="text-secondary small fw-medium text-uppercase">Attendance Rate</span>
+                        <h3 class="fw-bold mb-0 mt-1 text-success" th:text="${analytics.overallAttendanceRate} + '%'">0%</h3>
+                        <small class="text-muted">Classroom Presence</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card p-3">
+                        <span class="text-secondary small fw-medium text-uppercase">Academic Pass</span>
+                        <h3 class="fw-bold mb-0 mt-1 text-info" th:text="${analytics.passPercentage} + '%'">0%</h3>
+                        <small class="text-muted">Exam Passing Ratio</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card p-3">
+                        <span class="text-secondary small fw-medium text-uppercase">Average Score</span>
+                        <h3 class="fw-bold mb-0 mt-1 text-dark" th:text="${analytics.averageScore} + '%'">0%</h3>
+                        <small class="text-muted">Across All Courses</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card p-3">
+                        <span class="text-secondary small fw-medium text-uppercase">Fee Recovery</span>
+                        <h3 class="fw-bold mb-0 mt-1 text-warning" th:text="${analytics.feeCollectionRate} + '%'">0%</h3>
+                        <small class="text-muted">Billed vs Collected</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="stat-card p-3">
+                        <span class="text-secondary small fw-medium text-uppercase">Defaulters (<75%)</span>
+                        <h3 class="fw-bold mb-0 mt-1 text-danger" th:text="${analytics.lowAttendanceCount}">0</h3>
+                        <small class="text-muted">Short Attendance</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 1: Academic Distribution & Financial Recovery -->
+            <div class="row g-3 mb-4">
+                <!-- Academic Performance & Grade Distribution -->
+                <div class="col-lg-6">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-header d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-mortarboard-fill me-2 text-primary"></i> Academic Grades & Performance
+                            </h6>
+                            <span class="badge bg-light text-dark border" th:text="${analytics.totalEvaluatedPapers} + ' Papers Evaluated'">0</span>
+                        </div>
+                        <div class="card-custom-body">
+                            <div class="d-flex justify-content-around text-center mb-4 p-3 bg-light rounded">
+                                <div>
+                                    <span class="text-muted small d-block">Pass Rate</span>
+                                    <strong class="fs-5 text-success" th:text="${analytics.passPercentage} + '%'">0%</strong>
+                                </div>
+                                <div class="border-start"></div>
+                                <div>
+                                    <span class="text-muted small d-block">Fail Rate</span>
+                                    <strong class="fs-5 text-danger" th:text="${analytics.failPercentage} + '%'">0%</strong>
+                                </div>
+                                <div class="border-start"></div>
+                                <div>
+                                    <span class="text-muted small d-block">Average Mark</span>
+                                    <strong class="fs-5 text-primary" th:text="${analytics.averageScore} + '%'">0%</strong>
+                                </div>
+                            </div>
+
+                            <h6 class="small fw-bold text-uppercase text-muted mb-2">Grade Distribution</h6>
+                            <div class="row g-2 text-center">
+                                <div th:each="entry : ${analytics.gradeDistribution}" class="col">
+                                    <div class="p-2 border rounded">
+                                        <div class="fw-bold fs-6 text-primary" th:text="${entry.key}">A+</div>
+                                        <small class="text-muted" th:text="${entry.value} + ' students'">0</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Recovery & Fees -->
+                <div class="col-lg-6">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-header d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-wallet2 me-2 text-primary"></i> Institutional Financial Ledger
+                            </h6>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" th:text="${analytics.feeCollectionRate} + '% Collected'">0%</span>
+                        </div>
+                        <div class="card-custom-body">
+                            <div class="row g-3 mb-3">
+                                <div class="col-4">
+                                    <div class="p-3 bg-light rounded text-center">
+                                        <small class="text-muted d-block">Total Billed</small>
+                                        <h5 class="fw-bold text-dark mb-0" th:text="'$' + ${analytics.totalFeesBilled}">$0</h5>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 bg-success-subtle rounded text-center border border-success-subtle">
+                                        <small class="text-success d-block">Total Collected</small>
+                                        <h5 class="fw-bold text-success mb-0" th:text="'$' + ${analytics.collectedFees}">$0</h5>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 bg-danger-subtle rounded text-center border border-danger-subtle">
+                                        <small class="text-danger d-block">Outstanding Due</small>
+                                        <h5 class="fw-bold text-danger mb-0" th:text="'$' + ${analytics.pendingFees}">$0</h5>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="progress mb-3" style="height: 14px;">
+                                <div class="progress-bar bg-success" role="progressbar"
+                                     th:style="'width: ' + ${analytics.feeCollectionRate} + '%;'"
+                                     th:aria-valuenow="${analytics.feeCollectionRate}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Recovery Benchmark: 90%</span>
+                                <span th:text="${analytics.feeCollectionRate} + '% Achieved'">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Attendance Defaulters Warning Table -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i> Attendance Defaulter Roster (Below 75% Mandatory Attendance)
+                    </h6>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle" th:text="${analytics.lowAttendanceCount} + ' Defaulters Identified'">0</span>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Student Name</th>
+                                <th>Department & Program</th>
+                                <th>Semester</th>
+                                <th>Attendance %</th>
+                                <th>Classes Attended</th>
+                                <th>Risk Level</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(analytics.lowAttendanceStudents)}">
+                                <td colspan="7" class="text-center py-4 text-success">
+                                    <i class="bi bi-check-circle fs-3 d-block mb-1"></i>
+                                    All students are in compliance with the 75% attendance policy!
+                                </td>
+                            </tr>
+                            <tr th:each="row : ${analytics.lowAttendanceStudents}">
+                                <td><code class="text-dark" th:text="${row.student.studentId}">STU2025001</code></td>
+                                <td class="fw-bold text-dark" th:text="${row.student.fullName}">Student</td>
+                                <td>
+                                    <span th:text="${row.student.department != null ? row.student.department.name : 'CS'}">Dept</span>
+                                </td>
+                                <td>Sem <span th:text="${row.student.semester}">1</span></td>
+                                <td>
+                                    <strong class="text-danger" th:text="${row.percentage} + '%'">65%</strong>
+                                </td>
+                                <td th:text="${row.totalClasses} + ' Recorded Sessions'">0</td>
+                                <td>
+                                    <span class="badge bg-danger">Critical Shortage</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Campus Operations Summary Grid -->
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card-custom p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-mortarboard me-2 text-primary"></i> Examination Sessions</h6>
+                        <div class="d-flex justify-content-between py-1 border-bottom small">
+                            <span class="text-muted">Total Examination Cycles</span>
+                            <strong th:text="${analytics.totalExaminations}">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom small">
+                            <span class="text-muted">Scheduled Papers</span>
+                            <strong th:text="${analytics.totalSchedules}">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 small">
+                            <span class="text-muted">Marks Finalized</span>
+                            <strong class="text-success" th:text="${analytics.finalizedSchedules}">0</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-custom p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-book me-2 text-primary"></i> Library Circulation</h6>
+                        <div class="d-flex justify-content-between py-1 border-bottom small">
+                            <span class="text-muted">Total Catalog Titles</span>
+                            <strong th:text="${analytics.totalBooks}">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom small">
+                            <span class="text-muted">Circulation Loans</span>
+                            <strong th:text="${analytics.totalLoans}">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 small">
+                            <span class="text-muted">Outstanding Overdue Fines</span>
+                            <strong class="text-danger" th:text="'$' + ${analytics.unpaidFines}">$0</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-custom p-3 h-100">
+                        <h6 class="fw-bold text-dark mb-2"><i class="bi bi-chat-left-dots me-2 text-primary"></i> Grievance Redressal</h6>
+                        <div class="d-flex justify-content-between py-1 border-bottom small">
+                            <span class="text-muted">Total Filed Cases</span>
+                            <strong th:text="${analytics.totalGrievances}">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom small">
+                            <span class="text-muted">Open / Active</span>
+                            <strong class="text-warning" th:text="${analytics.openGrievances}">0</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 small">
+                            <span class="text-muted">Resolved Complaints</span>
+                            <strong class="text-success" th:text="${analytics.resolvedGrievances}">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+</body>
+</html>

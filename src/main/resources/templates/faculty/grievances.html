@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Assigned Grievances')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='grievances', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Faculty Grievance Desk', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Assigned Student Grievances & Redressal</h4>
+                    <p class="text-secondary small mb-0">Investigate complaints assigned to your department, communicate corrective measures, and resolve student inquiries.</p>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Table of Assigned Grievances -->
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-inbox-fill me-2 text-primary"></i> Cases Assigned to You (<span th:text="${#lists.size(grievances)}">0</span>)
+                    </h6>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Ticket #</th>
+                                <th>Student</th>
+                                <th>Issue Subject</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Date Filed</th>
+                                <th>Status</th>
+                                <th class="text-end">Respond</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(grievances)}">
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-check2-circle fs-3 d-block mb-1"></i>
+                                    You have no open grievances currently assigned to your desk.
+                                </td>
+                            </tr>
+                            <tr th:each="g : ${grievances}">
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace" th:text="${g.ticketNumber}">GRV-102931</span>
+                                    <span th:if="${g.escalated}" class="badge bg-danger text-white d-block mt-1">URGENT</span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark" th:text="${g.student.fullName}">Alex Morgan</div>
+                                    <small class="text-muted" th:text="${g.student.studentId}">STU2025001</small>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${g.title}">Issue Title</div>
+                                    <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;" th:text="${g.description}">Description</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-secondary border" th:text="${g.category}">ACADEMIC</span>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${g.priority == 'URGENT' ? 'bg-danger' : (g.priority == 'HIGH' ? 'bg-warning text-dark' : 'bg-secondary')}" th:text="${g.priority}">MEDIUM</span>
+                                </td>
+                                <td><span th:text="${#temporals.format(g.createdAt, 'yyyy-MM-dd')}">2026-04-01</span></td>
+                                <td>
+                                    <span class="badge" th:classappend="${g.status == 'RESOLVED' || g.status == 'CLOSED' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'}" th:text="${g.status}">ASSIGNED</span>
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" th:data-bs-target="'#respondModal-' + ${g.id}">
+                                        <i class="bi bi-reply-fill me-1"></i> Respond
+                                    </button>
+
+                                    <!-- Modal Respond -->
+                                    <div class="modal fade text-start" th:id="'respondModal-' + ${g.id}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form th:action="@{/faculty/grievances/{id}/respond(id=${g.id})}" method="post">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Respond to <span th:text="${g.ticketNumber}">Ticket</span></h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="mb-2 p-2 bg-light rounded small">
+                                                            <strong>Student Problem:</strong>
+                                                            <p class="mb-0 text-muted" th:text="${g.description}">Description text...</p>
+                                                        </div>
+                                                        <div class="mb-3 mt-3">
+                                                            <label class="form-label small fw-semibold">Faculty / Ombudsman Findings & Corrective Action</label>
+                                                            <textarea name="response" class="form-control" rows="3" placeholder="Explain steps taken or resolution provided..." required th:text="${g.officialResponse}"></textarea>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-semibold">Update Status</label>
+                                                            <select name="status" class="form-select" required>
+                                                                <option value="IN_PROGRESS" th:selected="${g.status == 'IN_PROGRESS'}">IN_PROGRESS (Under investigation)</option>
+                                                                <option value="RESOLVED" th:selected="${g.status == 'RESOLVED'}">RESOLVED (Action complete)</option>
+                                                                <option value="REJECTED" th:selected="${g.status == 'REJECTED'}">REJECTED (Declined / Out of scope)</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary btn-sm">Submit Response</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

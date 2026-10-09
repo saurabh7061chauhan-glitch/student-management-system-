@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Assignment Submissions')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='assignments', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Evaluate Submissions', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <a th:href="@{/faculty/assignments}" class="btn btn-outline-secondary btn-sm mb-2">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Assignments
+                    </a>
+                    <h4 class="fw-bold mb-1 text-dark" th:text="${assignment.title}">Assignment Title</h4>
+                    <p class="text-secondary small mb-0">
+                        Subject: <strong th:text="${assignment.subject != null ? assignment.subject.name : 'N/A'}">Subject</strong> &bull;
+                        Deadline: <span th:text="${#temporals.format(assignment.deadline, 'yyyy-MM-dd HH:mm')}">Date</span> &bull;
+                        Max Score: <span class="badge bg-light text-dark border" th:text="${assignment.maxMarks} + ' pts'">20 pts</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Submissions Table -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Student Submissions</div>
+                    <span class="badge bg-light text-muted border" th:text="${submissions.size()} + ' Submitted'">0</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Submitted At</th>
+                                <th>Attachment / Notes</th>
+                                <th>Status</th>
+                                <th>Score (Max: <span th:text="${assignment.maxMarks}">20</span>)</th>
+                                <th>Feedback</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="sub : ${submissions}">
+                                <td>
+                                    <div class="fw-bold text-dark small" th:text="${sub.student != null ? sub.student.fullName : 'N/A'}">Student Name</div>
+                                    <small class="text-muted" th:text="${sub.student != null ? sub.student.studentId : ''}">STU001</small>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold text-dark" th:text="${#temporals.format(sub.submittedAt, 'yyyy-MM-dd HH:mm')}">Date</div>
+                                    <span th:if="${sub.status == 'Late'}" class="badge bg-danger-subtle text-danger small">Late</span>
+                                </td>
+                                <td>
+                                    <a th:if="${sub.filePath != null}" th:href="${sub.filePath}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2 small mb-1">
+                                        <i class="bi bi-file-earmark-arrow-down me-1"></i> Download Work
+                                    </a>
+                                    <div th:if="${sub.submissionText != null and !#strings.isEmpty(sub.submissionText)}" class="small text-muted text-truncate" style="max-width: 180px;" th:title="${sub.submissionText}" th:text="${sub.submissionText}">
+                                        Notes
+                                    </div>
+                                    <span th:if="${sub.filePath == null and (sub.submissionText == null or #strings.isEmpty(sub.submissionText))}" class="text-muted small">No file</span>
+                                </td>
+                                <td>
+                                    <span th:if="${sub.status == 'Evaluated'}" class="badge bg-success-subtle text-success small">Evaluated</span>
+                                    <span th:if="${sub.status == 'Submitted'}" class="badge bg-warning-subtle text-warning small">Pending Review</span>
+                                    <span th:if="${sub.status == 'Late'}" class="badge bg-danger-subtle text-danger small">Submitted Late</span>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.5" min="0" th:max="${assignment.maxMarks}" name="obtainedMarks" th:value="${sub.obtainedMarks != null ? sub.obtainedMarks : ''}" th:form="'evalForm' + ${sub.id}" class="form-control form-control-sm" style="width: 80px;" required placeholder="Marks">
+                                </td>
+                                <td>
+                                    <input type="text" name="feedback" th:value="${sub.feedback != null ? sub.feedback : ''}" th:form="'evalForm' + ${sub.id}" class="form-control form-control-sm" placeholder="Optional comments...">
+                                </td>
+                                <td class="text-end">
+                                    <form th:id="'evalForm' + ${sub.id}" th:action="@{'/faculty/assignments/submissions/' + ${sub.id} + '/evaluate'}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-check-lg me-1"></i> Save
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(submissions)}">
+                                <td colspan="7" class="text-center text-muted py-4">No submissions received yet for this assignment.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

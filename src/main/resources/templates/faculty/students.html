@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Student Directory')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='students', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Student Management', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Filter & Search Card -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-body p-3">
+                    <form th:action="@{/faculty/students}" method="get" class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" name="search" class="form-control" placeholder="Search by student name, roll number, or email..." th:value="${currentSearch}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <select name="courseId" class="form-select">
+                                <option value="">All Programs / Courses</option>
+                                <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.name}" th:selected="${currentCourseId == c.id}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <select name="semester" class="form-select">
+                                <option value="">All Semesters</option>
+                                <option th:each="sem : ${#numbers.sequence(1, 8)}" th:value="${sem}" th:text="${'Semester ' + sem}" th:selected="${currentSemester == sem}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary w-50"><i class="bi bi-funnel me-1"></i> Filter</button>
+                            <a th:href="@{/faculty/students}" class="btn btn-outline-secondary w-50"><i class="bi bi-arrow-counterclockwise"></i> Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Student Permissions Notice -->
+            <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3 py-2 small" role="alert">
+                <i class="bi bi-shield-check text-success fs-5"></i>
+                <div>
+                    <strong>Faculty Access Policy:</strong> You have read-only access to view student records in your department and courses. Modifying enrollment status, changing student passwords, or deleting student records requires Administrative clearance.
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark">
+                        <i class="bi bi-people-fill text-primary me-2"></i>Students Directory (<span th:text="${#lists.size(students)}">0</span>)
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Roll ID</th>
+                                <th>Department & Program</th>
+                                <th>Semester</th>
+                                <th>Status</th>
+                                <th class="text-end">Profile</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="s : ${students}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img th:if="${s.profileImage != null}" th:src="${s.profileImage}" class="rounded-circle border" style="width: 38px; height: 38px; object-fit: cover;" alt="Avatar">
+                                        <div th:unless="${s.profileImage != null}" class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px;">S</div>
+                                        <div>
+                                            <div class="fw-bold text-dark" th:text="${s.fullName}">Alex Morgan</div>
+                                            <small class="text-muted d-block" th:text="${s.email}">alex@student.edu</small>
+                                            <small class="text-secondary" th:text="${s.phone}">+1-555-0101</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border fw-bold" th:text="${s.studentId}">STU1001</span>
+                                </td>
+                                <td>
+                                    <div class="fw-medium text-dark" th:text="${s.course != null ? s.course.name : 'N/A'}">B.Tech Computer Science</div>
+                                    <small class="text-muted" th:text="${s.department != null ? s.department.name : 'N/A'}">Computer Science</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary">Semester <span th:text="${s.semester}">3</span></span>
+                                </td>
+                                <td>
+                                    <span class="badge-status" 
+                                          th:classappend="${s.accountStatus == 'Active' ? 'badge-status-active' : (s.accountStatus == 'Disabled' ? 'badge-status-disabled' : 'badge-status-pending')}">
+                                        <i class="bi" th:classappend="${s.accountStatus == 'Active' ? 'bi-check-circle-fill' : 'bi-clock-history'}"></i>
+                                        <span th:text="${s.accountStatus}">Active</span>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            th:data-id="${s.id}"
+                                            th:data-name="${s.fullName}"
+                                            th:data-studentid="${s.studentId}"
+                                            th:data-email="${s.email}"
+                                            th:data-phone="${s.phone}"
+                                            th:data-dept="${s.department != null ? s.department.name : 'N/A'}"
+                                            th:data-course="${s.course != null ? s.course.name : 'N/A'}"
+                                            th:data-semester="${s.semester}"
+                                            th:data-gender="${s.gender}"
+                                            th:data-status="${s.accountStatus}"
+                                            onclick="showStudentModal(this)">
+                                        <i class="bi bi-eye me-1"></i> View Profile
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(students)}">
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-person-x fs-1 d-block mb-2 text-muted"></i>
+                                    No students found matching your criteria.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Profile View Modal -->
+<div class="modal fade" id="studentProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-person-badge-fill text-primary me-2"></i>Student Academic Profile
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex p-3 mb-2">
+                        <i class="bi bi-person fs-1"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1" id="mStudentName">Alex Morgan</h5>
+                    <span class="badge bg-light text-dark border px-3 py-1" id="mStudentId">STU1001</span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <small class="text-muted d-block">Department</small>
+                            <span class="fw-semibold text-dark" id="mStudentDept">Computer Science</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <small class="text-muted d-block">Program</small>
+                            <span class="fw-semibold text-dark" id="mStudentCourse">B.Tech</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <small class="text-muted d-block">Current Semester</small>
+                            <span class="fw-semibold text-dark" id="mStudentSem">Semester 3</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-light rounded-3">
+                            <small class="text-muted d-block">Account Status</small>
+                            <span class="fw-semibold text-dark" id="mStudentStatus">Active</span>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded-3">
+                            <small class="text-muted d-block">Contact Information</small>
+                            <div class="d-flex flex-column gap-1 mt-1 small">
+                                <div><i class="bi bi-envelope me-2 text-primary"></i><span id="mStudentEmail">alex@student.edu</span></div>
+                                <div><i class="bi bi-telephone me-2 text-primary"></i><span id="mStudentPhone">+1-555-0101</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+
+<script>
+function showStudentModal(btn) {
+    document.getElementById('mStudentName').textContent = btn.getAttribute('data-name');
+    document.getElementById('mStudentId').textContent = btn.getAttribute('data-studentid');
+    document.getElementById('mStudentDept').textContent = btn.getAttribute('data-dept');
+    document.getElementById('mStudentCourse').textContent = btn.getAttribute('data-course');
+    document.getElementById('mStudentSem').textContent = 'Semester ' + btn.getAttribute('data-semester');
+    document.getElementById('mStudentStatus').textContent = btn.getAttribute('data-status');
+    document.getElementById('mStudentEmail').textContent = btn.getAttribute('data-email');
+    document.getElementById('mStudentPhone').textContent = btn.getAttribute('data-phone') || 'Not provided';
+
+    const modal = new bootstrap.Modal(document.getElementById('studentProfileModal'));
+    modal.show();
+}
+</script>
+</body>
+</html>

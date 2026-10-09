@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Assignment Management')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='assignments', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Assignment Management', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Course Assignments</h4>
+                    <p class="text-secondary small mb-0">Publish assignments, evaluate student submissions, and provide grades and feedback.</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#createAssignmentModal">
+                    <i class="bi bi-plus-circle me-1"></i> Create Assignment
+                </button>
+            </div>
+
+            <!-- Flash Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Assignments Table Card -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark"><i class="bi bi-journal-text text-primary me-2"></i>Published Assignments</div>
+                    <span class="badge bg-light text-muted border" th:text="${assignments.size()} + ' Total'">0</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Assignment Title</th>
+                                <th>Subject & Section</th>
+                                <th>Deadline</th>
+                                <th>Max Marks</th>
+                                <th>Attachment</th>
+                                <th>Submissions</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="a : ${assignments}">
+                                <td>
+                                    <div class="fw-bold text-dark">
+                                        <a th:href="@{'/faculty/assignments/' + ${a.id}}" class="text-decoration-none text-dark hover-primary" th:text="${a.title}">Title</a>
+                                    </div>
+                                    <small class="text-muted text-truncate d-inline-block" style="max-width: 250px;" th:text="${a.description}">Description</small>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark small">
+                                        <a th:if="${a.subject != null}" th:href="@{'/faculty/subjects/' + ${a.subject.id}}" class="text-primary text-decoration-none" th:text="${a.subject.name}">Subject</a>
+                                        <span th:unless="${a.subject != null}">N/A</span>
+                                    </div>
+                                    <small class="text-secondary" th:text="${a.section != null ? a.section.displayName : 'All Sections'}">Section</small>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold text-dark" th:text="${#temporals.format(a.deadline, 'yyyy-MM-dd HH:mm')}">2025-01-01 23:59</div>
+                                    <small th:if="${a.isOverdue()}" class="text-danger"><i class="bi bi-clock-history me-1"></i>Passed</small>
+                                    <small th:unless="${a.isOverdue()}" class="text-success"><i class="bi bi-hourglass-split me-1"></i>Active</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${a.maxMarks} + ' pts'">20 pts</span>
+                                </td>
+                                <td>
+                                    <a th:if="${a.attachmentPath != null}" th:href="${a.attachmentPath}" target="_blank" class="btn btn-xs btn-outline-secondary py-0 px-2 small">
+                                        <i class="bi bi-download me-1"></i> File
+                                    </a>
+                                    <span th:if="${a.attachmentPath == null}" class="text-muted small">None</span>
+                                </td>
+                                <td>
+                                    <a th:href="@{'/faculty/assignments/' + ${a.id}}" class="badge bg-primary-subtle text-primary fw-semibold text-decoration-none" th:text="${a.submissions != null ? a.submissions.size() : 0} + ' Submissions'">
+                                        0 Submissions
+                                    </a>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <a th:href="@{'/faculty/assignments/' + ${a.id}}" class="btn btn-sm btn-outline-primary" title="View Details & Edit">
+                                            <i class="bi bi-eye"></i> Details
+                                        </a>
+                                        <a th:href="@{'/faculty/assignments/' + ${a.id} + '/submissions'}" class="btn btn-sm btn-outline-success" title="View & Grade Submissions">
+                                            <i class="bi bi-award"></i> Grade
+                                        </a>
+                                        <form th:action="@{'/faculty/assignments/delete/' + ${a.id}}" method="post" class="d-inline" onsubmit="return confirm('Delete this assignment?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(assignments)}">
+                                <td colspan="7" class="text-center text-muted py-4">No assignments published yet. Click "Create Assignment" to assign coursework.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Create Assignment Modal -->
+            <div class="modal fade" id="createAssignmentModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <form th:action="@{/faculty/assignments/create}" method="post" enctype="multipart/form-data">
+                            <div class="modal-header">
+                                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-plus-circle text-primary me-2"></i>Create New Assignment</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Assignment Title *</label>
+                                    <input type="text" name="title" class="form-control" required placeholder="e.g. Graph Algorithms Implementation">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Target Subject *</label>
+                                    <select name="subjectId" class="form-select" required>
+                                        <option value="">Select assigned subject...</option>
+                                        <option th:each="s : ${subjects}" th:value="${s.id}" th:text="${s.name + ' (' + s.code + ')'}">Data Structures</option>
+                                    </select>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Target Section (Optional)</label>
+                                        <select name="sectionId" class="form-select">
+                                            <option value="">All Sections</option>
+                                            <option th:each="sec : ${sections}" th:value="${sec.id}" th:text="${sec.displayName}">Section A</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Maximum Marks *</label>
+                                        <input type="number" step="1" name="maxMarks" class="form-control" value="20" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Submission Deadline *</label>
+                                    <input type="datetime-local" name="deadline" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Instructions / Description</label>
+                                    <textarea name="description" class="form-control" rows="4" placeholder="Detailed submission guidelines, project instructions, criteria..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Attach Reference Material / Worksheet (Optional)</label>
+                                    <input type="file" name="file" class="form-control">
+                                    <div class="form-text small">Upload PDF, ZIP, DOCX, or assignment brief.</div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Publish Assignment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

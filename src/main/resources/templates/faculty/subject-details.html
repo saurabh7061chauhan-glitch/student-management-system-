@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title=${subject.name} + ' - Subject Management')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='subjects', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Subject Details & Workload', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Breadcrumb Navigation & Quick Operations -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <a th:href="@{/faculty/subjects}" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Assigned Subjects
+                </a>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a th:href="@{'/faculty/attendance?subjectId=' + ${subject.id}}" class="btn btn-primary btn-sm fw-semibold">
+                        <i class="bi bi-calendar-check me-1"></i> Mark Attendance
+                    </a>
+                    <a th:href="@{'/faculty/marks?subjectId=' + ${subject.id}}" class="btn btn-success btn-sm fw-semibold">
+                        <i class="bi bi-award me-1"></i> Enter Marks
+                    </a>
+                    <a th:href="@{/faculty/assignments}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i> Create Assignment
+                    </a>
+                    <a th:href="@{/faculty/timetable}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-calendar-week me-1"></i> Faculty Timetable
+                    </a>
+                </div>
+            </div>
+
+            <!-- Subject Header Card -->
+            <div class="card-custom mb-4 bg-white border">
+                <div class="card-custom-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="rounded-3 bg-primary text-white p-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                <i class="bi bi-journal-bookmark-fill fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span class="badge bg-primary px-3 py-1 fs-6" th:text="${subject.code}">CS301</span>
+                                    <span class="badge bg-light text-dark border" th:text="${subject.credits != null ? subject.credits + ' Credits' : '4 Credits'}">4 Credits</span>
+                                    <span class="badge bg-info-subtle text-info border border-info-subtle" th:text="'Semester ' + ${subject.semester}">Semester 3</span>
+                                    <span class="badge bg-secondary-subtle text-dark" th:text="${subject.course != null ? subject.course.courseName : 'Engineering'}">B.Tech</span>
+                                </div>
+                                <h3 class="fw-bold mb-1 text-dark" th:text="${subject.name}">Data Structures & Algorithms</h3>
+                                <div class="text-secondary small">
+                                    <i class="bi bi-building me-1"></i> Department: <span class="fw-semibold text-dark" th:text="${subject.department != null ? subject.department.name : 'Engineering'}">Computer Science</span>
+                                    <span class="mx-2">•</span>
+                                    <i class="bi bi-calendar3 me-1"></i> Academic Term: <span class="fw-semibold text-dark">2026-2027</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 border" style="min-width: 220px;">
+                            <div class="text-secondary small fw-bold text-uppercase mb-1" style="font-size: 0.7rem;">Enrolled Batch</div>
+                            <div class="fs-4 fw-bold text-dark mb-0">
+                                <span th:text="${#lists.size(enrolledStudents)}">45</span> <small class="fs-6 text-muted fw-normal">Students</small>
+                            </div>
+                            <small class="text-muted" th:text="${subject.course != null ? subject.course.code + ' - Sem ' + subject.semester : ''}">BTECH-CSE - Sem 3</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Overview KPIs -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">Class Attendance</span>
+                                <h3 class="fw-bold mb-0 mt-1" th:classappend="${attendanceRate >= 75 ? 'text-success' : 'text-danger'}" th:text="${attendanceRate + '%'}">88%</h3>
+                                <small class="text-muted" th:text="${totalAttendanceCount + ' Records recorded'}">Total logs</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-success">
+                                <i class="bi bi-calendar-check-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">Active Coursework</span>
+                                <h3 class="fw-bold mb-0 mt-1 text-primary" th:text="${#lists.size(assignments)}">2</h3>
+                                <small class="text-primary fw-semibold">Assignments posted</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-primary">
+                                <i class="bi bi-pencil-square"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">Weekly Teaching Slots</span>
+                                <h3 class="fw-bold mb-0 mt-1" th:text="${#lists.size(timetableSlots)} + ' Periods'">2 Periods</h3>
+                                <small class="text-muted">In weekly timetable</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-warning">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-sm-6 col-lg-3">
+                    <div class="stat-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-secondary small fw-medium text-uppercase">Study Material</span>
+                                <h3 class="fw-bold mb-0 mt-1" th:text="${#lists.size(materials)}">4</h3>
+                                <small class="text-muted">Resources published</small>
+                            </div>
+                            <div class="stat-icon-wrapper stat-icon-info">
+                                <i class="bi bi-folder-fill"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabbed Content Section -->
+            <div class="card-custom bg-white border">
+                <div class="card-custom-header p-2 bg-light border-bottom">
+                    <ul class="nav nav-pills" id="facultySubjectTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-semibold btn-sm" id="ftab-students-btn" data-bs-toggle="pill" data-bs-target="#ftab-students" type="button" role="tab">
+                                <i class="bi bi-people-fill me-1"></i> Enrolled Students (<span th:text="${#lists.size(enrolledStudents)}">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold btn-sm" id="ftab-timetable-btn" data-bs-toggle="pill" data-bs-target="#ftab-timetable" type="button" role="tab">
+                                <i class="bi bi-calendar-week me-1"></i> Timetable Slots (<span th:text="${#lists.size(timetableSlots)}">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold btn-sm" id="ftab-assignments-btn" data-bs-toggle="pill" data-bs-target="#ftab-assignments" type="button" role="tab">
+                                <i class="bi bi-pencil-square me-1"></i> Assignments (<span th:text="${#lists.size(assignments)}">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold btn-sm" id="ftab-materials-btn" data-bs-toggle="pill" data-bs-target="#ftab-materials" type="button" role="tab">
+                                <i class="bi bi-file-earmark-text me-1"></i> Materials (<span th:text="${#lists.size(materials)}">0</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-semibold btn-sm" id="ftab-attendance-btn" data-bs-toggle="pill" data-bs-target="#ftab-attendance" type="button" role="tab">
+                                <i class="bi bi-clock-history me-1"></i> Recent Attendance
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-custom-body p-4">
+                    <div class="tab-content" id="facultySubjectTabContent">
+
+                        <!-- TAB 1: Enrolled Students -->
+                        <div class="tab-pane fade show active" id="ftab-students" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark mb-0">Class Enrollment Roster</h6>
+                                <a th:href="@{'/faculty/attendance?subjectId=' + ${subject.id}}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-calendar-check me-1"></i> Take Attendance for This Class
+                                </a>
+                            </div>
+
+                            <div th:if="${#lists.isEmpty(enrolledStudents)}" class="text-center text-muted py-4">
+                                <i class="bi bi-people fs-2 d-block mb-2 text-secondary"></i>
+                                No students currently registered in this subject's course and semester.
+                            </div>
+
+                            <div class="table-responsive" th:if="${!#lists.isEmpty(enrolledStudents)}">
+                                <table class="table table-custom table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Roll Number</th>
+                                            <th>Student Name</th>
+                                            <th>Section</th>
+                                            <th>Email</th>
+                                            <th>Phone</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="st : ${enrolledStudents}">
+                                            <td class="fw-bold text-dark" th:text="${st.rollNo}">STU2025001</td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                        <span th:text="${#strings.substring(st.fullName, 0, 1)}">A</span>
+                                                    </div>
+                                                    <span class="fw-semibold text-dark" th:text="${st.fullName}">Alex Morgan</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border" th:text="${st.section != null ? 'Section ' + st.section.name : 'Sec A'}">Sec A</span>
+                                            </td>
+                                            <td class="small text-muted" th:text="${st.email}">alex@example.com</td>
+                                            <td class="small text-muted" th:text="${st.phone != null ? st.phone : '-'}">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Timetable Slots -->
+                        <div class="tab-pane fade" id="ftab-timetable" role="tabpanel">
+                            <h6 class="fw-bold text-dark mb-3">Teaching Slots for <span th:text="${subject.name}">Subject</span></h6>
+                            <div th:if="${#lists.isEmpty(timetableSlots)}" class="text-center text-muted py-4">
+                                <i class="bi bi-calendar-x fs-2 d-block mb-2 text-secondary"></i>
+                                No scheduled timetable slots for this subject.
+                            </div>
+                            <div class="row g-3" th:if="${!#lists.isEmpty(timetableSlots)}">
+                                <div class="col-md-6 col-lg-4" th:each="slot : ${timetableSlots}">
+                                    <div class="p-3 rounded-3 border bg-light-subtle h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-primary px-2 py-1" th:text="${slot.dayOfWeek}">Monday</span>
+                                            <span class="badge" 
+                                                  th:classappend="${slot.classType == 'Practical' || slot.classType == 'Lab' ? 'bg-purple-subtle text-purple border' : (slot.classType == 'Tutorial' ? 'bg-warning-subtle text-warning-emphasis border' : 'bg-info-subtle text-info border')}"
+                                                  th:text="${slot.classType}">Lecture</span>
+                                        </div>
+                                        <div class="fw-bold text-dark fs-6 mb-1" th:text="${slot.formattedTiming}">09:00 AM - 10:30 AM</div>
+                                        <div class="text-secondary small">
+                                            <i class="bi bi-geo-alt me-1"></i> Classroom: <span class="fw-semibold text-dark" th:text="${slot.roomNo}">Room 301</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: Assignments -->
+                        <div class="tab-pane fade" id="ftab-assignments" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark mb-0">Assignments Posted</h6>
+                                <a th:href="@{/faculty/assignments}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-plus-circle me-1"></i> Manage Assignments
+                                </a>
+                            </div>
+
+                            <div th:if="${#lists.isEmpty(assignments)}" class="text-center text-muted py-4">
+                                <i class="bi bi-journal-check fs-2 d-block mb-2 text-secondary"></i>
+                                No assignments posted for this subject yet.
+                            </div>
+
+                            <div class="list-group list-group-flush" th:if="${!#lists.isEmpty(assignments)}">
+                                <div class="list-group-item p-3 border rounded-3 mb-2" th:each="a : ${assignments}">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <h6 class="fw-bold text-dark mb-0">
+                                                    <a th:href="@{/faculty/assignments/{id}(id=${a.id})}" class="text-decoration-none text-dark hover-primary" th:text="${a.title}">Title</a>
+                                                </h6>
+                                                <span class="badge bg-light text-dark border small" th:text="${a.maxMarks} + ' pts'">20 pts</span>
+                                            </div>
+                                            <p class="text-secondary small mb-1" th:text="${a.description}">Description</p>
+                                            <div class="small text-muted">
+                                                <i class="bi bi-calendar-event me-1"></i> Due: 
+                                                <span class="fw-semibold text-dark" th:text="${#temporals.format(a.deadline, 'dd MMM yyyy, HH:mm')}">Date</span>
+                                                <span class="mx-2">•</span>
+                                                <span class="badge bg-primary-subtle text-primary" th:text="${a.submissions != null ? a.submissions.size() : 0} + ' Submissions'">0 Submissions</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <a th:href="@{/faculty/assignments/{id}(id=${a.id})}" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-eye me-1"></i> Details & Edit
+                                            </a>
+                                            <a th:href="@{'/faculty/assignments/' + ${a.id} + '/submissions'}" class="btn btn-outline-success btn-sm">
+                                                <i class="bi bi-award me-1"></i> Grade
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 4: Materials -->
+                        <div class="tab-pane fade" id="ftab-materials" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark mb-0">Course Study Materials</h6>
+                                <a th:href="@{/faculty/study-materials}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-upload me-1"></i> Upload Material
+                                </a>
+                            </div>
+
+                            <div th:if="${#lists.isEmpty(materials)}" class="text-center text-muted py-4">
+                                <i class="bi bi-folder-x fs-2 d-block mb-2 text-secondary"></i>
+                                No materials uploaded for this subject yet.
+                            </div>
+
+                            <div class="list-group list-group-flush" th:if="${!#lists.isEmpty(materials)}">
+                                <div class="list-group-item p-3 border rounded-3 mb-2 d-flex justify-content-between align-items-center" th:each="m : ${materials}">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="rounded-circle bg-light p-2 text-primary">
+                                            <i class="bi bi-file-earmark-pdf fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-0" th:text="${m.title}">Material Title</h6>
+                                            <small class="text-muted" th:text="${m.description}">Notes</small>
+                                        </div>
+                                    </div>
+                                    <a th:href="@{'/faculty/study-materials/' + ${m.id} + '/download'}" class="btn btn-sm btn-outline-primary" title="Download Material">
+                                        <i class="bi bi-download me-1"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 5: Recent Attendance -->
+                        <div class="tab-pane fade" id="ftab-attendance" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold text-dark mb-0">Recent Attendance Logs</h6>
+                                <a th:href="@{'/faculty/attendance?subjectId=' + ${subject.id}}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-calendar-check me-1"></i> Open Attendance Register
+                                </a>
+                            </div>
+
+                            <div th:if="${#lists.isEmpty(recentAttendance)}" class="text-center text-muted py-4">
+                                <i class="bi bi-calendar-x fs-2 d-block mb-2 text-secondary"></i>
+                                No attendance records logged yet for this subject.
+                            </div>
+
+                            <div class="table-responsive" th:if="${!#lists.isEmpty(recentAttendance)}">
+                                <table class="table table-custom table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Student</th>
+                                            <th>Roll No</th>
+                                            <th>Status</th>
+                                            <th>Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="att : ${recentAttendance}">
+                                            <td class="fw-semibold text-dark" th:text="${#temporals.format(att.date, 'EEEE, dd MMM yyyy')}">Date</td>
+                                            <td th:text="${att.student != null ? att.student.fullName : 'Student'}">Student</td>
+                                            <td class="small text-muted" th:text="${att.student != null ? att.student.rollNo : '-'}">STU001</td>
+                                            <td>
+                                                <span th:if="${'Present'.equalsIgnoreCase(att.status)}" class="badge bg-success-subtle text-success">Present</span>
+                                                <span th:if="${'Late'.equalsIgnoreCase(att.status)}" class="badge bg-warning-subtle text-warning-emphasis">Late</span>
+                                                <span th:if="${'Absent'.equalsIgnoreCase(att.status)}" class="badge bg-danger-subtle text-danger">Absent</span>
+                                            </td>
+                                            <td class="text-muted small" th:text="${att.remarks != null ? att.remarks : '-'}">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

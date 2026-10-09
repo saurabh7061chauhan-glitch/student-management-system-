@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Faculty Class Timetable')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='timetable', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Faculty Class Timetable', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Blue Header with Selected Month and Date (Design Reference) -->
+            <div class="card-custom mb-4 text-white overflow-hidden border-0 shadow-sm"
+                 style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);">
+                <div class="card-custom-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-white text-primary fw-bold px-2 py-1" style="font-size: 0.75rem;">FACULTY SCHEDULE</span>
+                                <span class="badge bg-white text-dark bg-opacity-25 text-white" th:text="${teacher.department != null ? teacher.department.name : 'Department'}">Computer Science</span>
+                            </div>
+                            <h2 class="fw-bold mb-1 text-white" th:text="${#temporals.format(selectedDate, 'MMMM yyyy')}">October 2026</h2>
+                            <p class="mb-0 text-white-50 small">
+                                <i class="bi bi-calendar-event me-1"></i> Selected: <strong class="text-white" th:text="${#temporals.format(selectedDate, 'EEEE, dd MMMM yyyy')}">Wednesday, 07 October 2026</strong>
+                                <span class="mx-2">•</span>
+                                <i class="bi bi-clock me-1"></i> Today's Lectures: <strong class="text-white" th:text="${#lists.size(todayClasses)}">2</strong>
+                                <span class="mx-2">•</span>
+                                <i class="bi bi-layers me-1"></i> Selected Day Periods: <strong class="text-white" th:text="${#lists.size(selectedDayClasses)}">2</strong>
+                            </p>
+                        </div>
+
+                        <!-- Date Navigation Controls -->
+                        <div class="d-flex align-items-center gap-2">
+                            <a th:href="@{/faculty/timetable(date=${prevWeekDate})}" class="btn btn-light btn-sm px-3 fw-semibold shadow-sm" title="Previous Week">
+                                <i class="bi bi-chevron-left me-1"></i> Prev Week
+                            </a>
+                            <a th:href="@{/faculty/timetable(date=${todayDate})}" class="btn btn-outline-light btn-sm px-3 fw-semibold">
+                                <i class="bi bi-dot"></i> Today
+                            </a>
+                            <a th:href="@{/faculty/timetable(date=${nextWeekDate})}" class="btn btn-light btn-sm px-3 fw-semibold shadow-sm" title="Next Week">
+                                Next Week <i class="bi bi-chevron-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7-Day Weekly Calendar Bar (Monday to Sunday) - Mobile Horizontally Scrollable -->
+                <div class="px-4 py-3 bg-black bg-opacity-20 border-top border-white border-opacity-10">
+                    <div class="d-flex gap-2 overflow-x-auto flex-nowrap pb-1" style="scrollbar-width: thin;">
+                        <a th:each="wd : ${weekDays}"
+                           th:href="@{/faculty/timetable(date=${wd.date})}"
+                           class="text-decoration-none flex-fill text-center p-2 px-3 rounded-3 transition border"
+                           style="min-width: 105px;"
+                           th:classappend="${wd.selected ? 'bg-white text-primary shadow border-white fw-bold' : (wd.today ? 'bg-white bg-opacity-25 text-white border-white border-opacity-50' : 'bg-white bg-opacity-10 text-white border-transparent hover-bg-opacity')}">
+                            <div class="small text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.5px;"
+                                 th:classappend="${wd.selected ? 'text-primary' : 'text-white-50'}"
+                                 th:text="${wd.shortDay}">MON</div>
+                            <div class="fs-4 fw-bold lh-1 my-1"
+                                 th:classappend="${wd.selected ? 'text-primary' : 'text-white'}"
+                                 th:text="${wd.dayOfMonth}">07</div>
+                            <div class="small" style="font-size: 0.68rem;">
+                                <span th:if="${wd.classCount > 0}" class="badge"
+                                      th:classappend="${wd.selected ? 'bg-primary text-white' : 'bg-white bg-opacity-25 text-white'}"
+                                      th:text="${wd.classCount + ' Classes'}">2 Classes</span>
+                                <span th:unless="${wd.classCount > 0}" class="badge bg-transparent text-white-50">Free Day</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Switcher & Action Row -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-calendar3-range text-primary me-2"></i>Schedule for
+                        <span class="text-primary" th:text="${#temporals.format(selectedDate, 'EEEE, dd MMM yyyy')}">Wednesday, 07 Oct</span>
+                    </h5>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle" th:text="${#lists.size(selectedDayClasses) + ' Classes'}">2 Classes</span>
+                </div>
+
+                <ul class="nav nav-pills" id="facultyTimetableTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold btn-sm" id="fday-tab" data-bs-toggle="pill" data-bs-target="#fday-view" type="button" role="tab">
+                            <i class="bi bi-view-list me-1"></i> Day Schedule
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold btn-sm" id="fgrid-tab" data-bs-toggle="pill" data-bs-target="#fgrid-view" type="button" role="tab">
+                            <i class="bi bi-grid-3x3-gap me-1"></i> Weekly Grid
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tab Panes -->
+            <div class="tab-content" id="facultyTimetableTabContent">
+
+                <!-- TAB 1: Day Schedule View -->
+                <div class="tab-pane fade show active" id="fday-view" role="tabpanel">
+                    <!-- Empty State -->
+                    <div th:if="${#lists.isEmpty(selectedDayClasses)}" class="card-custom bg-white border p-5 text-center text-muted">
+                        <div class="rounded-circle bg-light d-inline-flex p-4 mb-3 text-secondary">
+                            <i class="bi bi-calendar-check fs-1 text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-1">No Teaching Sessions Scheduled</h4>
+                        <p class="text-secondary small mb-3">You have no lectures or practicals assigned on <span class="fw-semibold text-dark" th:text="${#temporals.format(selectedDate, 'EEEE, dd MMMM yyyy')}">this date</span>.</p>
+                        <div>
+                            <a th:href="@{/faculty/timetable(date=${todayDate})}" class="btn btn-outline-primary btn-sm me-2">
+                                <i class="bi bi-calendar-event me-1"></i> View Today
+                            </a>
+                            <a th:href="@{/faculty/subjects}" class="btn btn-light btn-sm border">
+                                <i class="bi bi-journal-bookmark me-1"></i> Assigned Subjects
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Day Class Cards -->
+                    <div class="row g-3" th:if="${!#lists.isEmpty(selectedDayClasses)}">
+                        <div class="col-12" th:each="cls : ${selectedDayClasses}">
+                            <div class="card-custom bg-white border hover-shadow transition">
+                                <div class="card-custom-body p-4">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                                        <div class="d-flex align-items-start gap-3">
+                                            <div class="rounded-3 p-3 text-center border" style="min-width: 140px; background-color: #f8fafc;">
+                                                <div class="text-secondary small fw-bold text-uppercase" style="font-size: 0.7rem;">Time Slot</div>
+                                                <div class="fw-bold text-primary fs-6 mb-1" th:text="${cls.formattedTiming}">09:00 - 10:30</div>
+                                                <span class="badge bg-light text-dark border small">
+                                                    <i class="bi bi-clock me-1"></i> Session
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                                    <span th:if="${cls.classType == 'Lecture'}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                                        <i class="bi bi-mortarboard-fill me-1"></i> Lecture
+                                                    </span>
+                                                    <span th:if="${cls.classType == 'Practical' || cls.classType == 'Lab'}" class="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1" style="background-color: #f3e8ff; color: #7e22ce;">
+                                                        <i class="bi bi-cpu-fill me-1"></i> Practical / Lab
+                                                    </span>
+                                                    <span th:if="${cls.classType == 'Tutorial'}" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
+                                                        <i class="bi bi-people-fill me-1"></i> Tutorial
+                                                    </span>
+                                                    <span th:if="${cls.classType != 'Lecture' && cls.classType != 'Practical' && cls.classType != 'Lab' && cls.classType != 'Tutorial'}"
+                                                          class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1"
+                                                          th:text="${cls.classType}">Class</span>
+
+                                                    <span class="badge bg-secondary-subtle text-dark" th:text="${cls.subject != null ? cls.subject.code : ''}">CS301</span>
+                                                    <span class="badge bg-light text-dark border">
+                                                        <i class="bi bi-geo-alt-fill text-danger me-1"></i> <span th:text="${cls.roomNo}">Room 301</span>
+                                                    </span>
+                                                </div>
+
+                                                <h4 class="fw-bold mb-1 text-dark">
+                                                    <a th:if="${cls.subject != null}" th:href="@{/faculty/subjects/{id}(id=${cls.subject.id})}"
+                                                       class="text-decoration-none text-dark hover-primary"
+                                                       th:text="${cls.subject.name}">Data Structures & Algorithms</a>
+                                                    <span th:unless="${cls.subject != null}">Scheduled Class</span>
+                                                </h4>
+
+                                                <div class="small text-muted mt-2">
+                                                    <i class="bi bi-mortarboard me-1"></i> Program: 
+                                                    <span class="fw-semibold text-dark" th:text="${cls.course != null ? cls.course.courseName : 'Engineering'}">B.Tech</span>
+                                                    <span class="mx-2">•</span>
+                                                    <i class="bi bi-calendar3 me-1"></i> Semester <span th:text="${cls.semester}">3</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <a th:if="${cls.subject != null}" th:href="@{'/faculty/attendance?subjectId=' + ${cls.subject.id}}" class="btn btn-primary btn-sm fw-semibold">
+                                                <i class="bi bi-calendar-check me-1"></i> Mark Attendance
+                                            </a>
+                                            <a th:if="${cls.subject != null}" th:href="@{/faculty/subjects/{id}(id=${cls.subject.id})}" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-journal-bookmark me-1"></i> Subject Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Weekly Grid View -->
+                <div class="tab-pane fade" id="fgrid-view" role="tabpanel">
+                    <div class="row g-3">
+                        <div class="col-lg-4 col-md-6" th:each="dayEntry : ${weeklyGrid}">
+                            <div class="card-custom h-100 bg-white border">
+                                <div class="card-custom-header py-2 d-flex justify-content-between align-items-center"
+                                     th:classappend="${#temporals.format(selectedDate, 'EEEE').equalsIgnoreCase(dayEntry.key) ? 'bg-primary text-white' : 'bg-light'}">
+                                    <span class="fw-bold"
+                                          th:classappend="${#temporals.format(selectedDate, 'EEEE').equalsIgnoreCase(dayEntry.key) ? 'text-white' : 'text-dark'}">
+                                        <i class="bi bi-calendar-day me-1"></i>
+                                        <span th:text="${dayEntry.key}">Monday</span>
+                                    </span>
+                                    <span th:if="${#temporals.format(todayDate, 'EEEE').equalsIgnoreCase(dayEntry.key)}" class="badge bg-warning text-dark fw-bold" style="font-size: 0.7rem;">Today</span>
+                                </div>
+                                <div class="card-custom-body p-3">
+                                    <div th:if="${#lists.isEmpty(dayEntry.value)}" class="text-center text-muted py-4 small">
+                                        <i class="bi bi-cup-hot fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                                        No scheduled sessions
+                                    </div>
+                                    <div class="d-flex flex-column gap-2" th:if="${!#lists.isEmpty(dayEntry.value)}">
+                                        <div th:each="item : ${dayEntry.value}" class="p-2 rounded-2 border bg-light-subtle">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <span class="badge bg-primary px-2 py-1 small" th:text="${item.formattedTiming}">09:00 AM - 10:30 AM</span>
+                                                <span class="badge bg-light text-dark border small" th:text="${item.roomNo}">Room 301</span>
+                                            </div>
+                                            <div class="fw-bold text-dark small mt-1">
+                                                <a th:if="${item.subject != null}" th:href="@{/faculty/subjects/{id}(id=${item.subject.id})}"
+                                                   class="text-decoration-none text-dark hover-primary"
+                                                   th:text="${item.subject.name}">Data Structures</a>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mt-2 text-muted" style="font-size: 0.75rem;">
+                                                <span th:text="${item.course != null ? item.course.code + ' Sem ' + item.semester : ''}">BTECH Sem 3</span>
+                                                <span th:if="${item.classType == 'Practical' || item.classType == 'Lab'}" class="badge text-purple" style="background-color: #f3e8ff; color: #7e22ce;">Practical</span>
+                                                <span th:if="${item.classType == 'Tutorial'}" class="badge bg-warning-subtle text-warning-emphasis">Tutorial</span>
+                                                <span th:if="${item.classType == 'Lecture'}" class="badge bg-primary-subtle text-primary">Lecture</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

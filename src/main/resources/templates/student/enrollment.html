@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Course Registration & Enrollment')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='enrollment', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Course Registration', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Course Enrollment & Credit Registration</h4>
+                    <p class="text-secondary small mb-0">Browse semester curriculum, register for accredited courses, and manage your academic credits.</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span th:if="${isRegistrationOpen}" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fw-semibold">
+                        <i class="bi bi-unlock-fill me-1"></i> Registration Window OPEN
+                    </span>
+                    <span th:unless="${isRegistrationOpen}" class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fw-semibold">
+                        <i class="bi bi-lock-fill me-1"></i> Registration Window CLOSED
+                    </span>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- KPI Metric Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="stat-card p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-secondary small fw-medium text-uppercase">Registered Credits</span>
+                            <h3 class="fw-bold mb-0 mt-1 text-primary" th:text="${totalRegisteredCredits} + ' / 30'">0 / 30</h3>
+                            <small class="text-muted">Semester <span th:text="${student.semester}">1</span> Total</small>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-primary">
+                            <i class="bi bi-award-fill"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-secondary small fw-medium text-uppercase">Enrolled Courses</span>
+                            <h3 class="fw-bold mb-0 mt-1 text-success" th:text="${enrolledCourses.size()}">0</h3>
+                            <small class="text-success fw-semibold"><i class="bi bi-check2-circle"></i> Active Courses</small>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-success">
+                            <i class="bi bi-journal-check"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card p-3 d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-secondary small fw-medium text-uppercase">Program & Semester</span>
+                            <h5 class="fw-bold mb-0 mt-1 text-dark" th:text="${student.course != null ? student.course.code : 'Program'}">CSE</h5>
+                            <small class="text-secondary">Semester <span th:text="${student.semester}">1</span> | Section <span th:text="${student.section != null ? student.section.name : 'N/A'}">A</span></small>
+                        </div>
+                        <div class="stat-icon-wrapper stat-icon-info">
+                            <i class="bi bi-mortarboard-fill"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 1: My Enrolled Courses -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark"><i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Currently Enrolled Courses</div>
+                    <span class="badge bg-light text-muted border" th:text="${enrolledCourses.size()} + ' Subjects'">0 Subjects</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Subject Code</th>
+                                <th>Course Title</th>
+                                <th>Type</th>
+                                <th>Credits</th>
+                                <th>Instructor</th>
+                                <th>Semester</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="e : ${enrolledCourses}">
+                                <td>
+                                    <span class="badge bg-light text-dark border fw-bold" th:text="${e.subject.code}">CS301</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${e.subject.name}">Data Structures</div>
+                                    <small class="text-muted" th:text="'Academic Year: ' + ${e.academicYear}">2025-2026</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary" th:text="${e.subject.courseType}">CORE</span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-primary" th:text="${e.credits} + ' Credits'">4 Credits</span>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold text-dark" th:text="${e.subject.teacher != null ? e.subject.teacher.name : 'TBD'}">Instructor</div>
+                                    <small class="text-muted" th:text="${e.subject.teacher != null ? e.subject.teacher.designation : ''}">Professor</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info" th:text="'Sem ' + ${e.semester}">Sem 3</span>
+                                </td>
+                                <td>
+                                    <span th:if="${e.enrollmentStatus == 'APPROVED'}" class="badge bg-success-subtle text-success">Approved</span>
+                                    <span th:if="${e.enrollmentStatus == 'PENDING'}" class="badge bg-warning-subtle text-warning">Pending Approval</span>
+                                    <span th:if="${e.enrollmentStatus == 'REJECTED'}" class="badge bg-danger-subtle text-danger">Rejected</span>
+                                </td>
+                                <td class="text-end">
+                                    <form th:if="${isRegistrationOpen && e.enrollmentStatus != 'DROPPED'}"
+                                          th:action="@{'/student/enrollment/drop/' + ${e.id}}" method="post"
+                                          onsubmit="return confirm('Are you sure you want to drop this subject?');" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-x-circle me-1"></i> Drop
+                                        </button>
+                                    </form>
+                                    <span th:unless="${isRegistrationOpen}" class="text-muted small">Locked</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(enrolledCourses)}">
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
+                                    You have not registered for any courses yet. Choose from available courses below.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 2: Available Courses for Enrollment -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark"><i class="bi bi-plus-circle-dotted text-success me-2"></i>Available Courses for Enrollment (Semester <span th:text="${student.semester}">1</span>)</div>
+                    <span class="badge bg-light text-muted border" th:text="${availableSubjects.size()} + ' Available'">0 Available</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Subject Code</th>
+                                <th>Course Title</th>
+                                <th>Category / Type</th>
+                                <th>Credits</th>
+                                <th>Faculty</th>
+                                <th>Section</th>
+                                <th class="text-end">Registration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="sub : ${availableSubjects}">
+                                <td>
+                                    <span class="badge bg-light text-dark border fw-bold" th:text="${sub.code}">CS301</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${sub.name}">Data Structures</div>
+                                    <small class="text-muted" th:text="${sub.department != null ? sub.department.name : 'Engineering'}">Department</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary" th:text="${sub.courseType}">CORE</span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-primary" th:text="${sub.credits} + ' Credits'">4 Credits</span>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold text-dark" th:text="${sub.teacher != null ? sub.teacher.name : 'Assigned Soon'}">Instructor</div>
+                                    <small class="text-muted" th:text="${sub.teacher != null ? sub.teacher.designation : ''}">Faculty</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${sub.section != null ? sub.section.name : 'All Sections'}">Section A</span>
+                                </td>
+                                <td class="text-end">
+                                    <form th:action="@{/student/enrollment/enroll}" method="post" class="d-inline">
+                                        <input type="hidden" name="subjectId" th:value="${sub.id}">
+                                        <input type="hidden" name="academicYear" value="2025-2026">
+                                        <button type="submit" class="btn btn-sm btn-primary" th:disabled="${!isRegistrationOpen}">
+                                            <i class="bi bi-plus-circle me-1"></i> Register Course
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(availableSubjects)}">
+                                <td colspan="7" class="text-center text-muted py-5">
+                                    <i class="bi bi-info-circle fs-1 d-block mb-2 text-secondary"></i>
+                                    No additional subjects available for enrollment in your current semester.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

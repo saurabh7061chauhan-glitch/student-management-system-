@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Notice Board')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='notices')}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Campus Notices & Bulletins')}"></nav>
+
+        <div class="page-container">
+            <!-- Header Action Card -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1"><i class="bi bi-megaphone-fill text-primary me-2"></i>Official Announcements</h5>
+                        <p class="text-secondary small mb-0">Publish circulars, exam schedules, and holiday announcements</p>
+                    </div>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#publishNoticeModal">
+                        <i class="bi bi-plus-circle me-1"></i> Publish Notice
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notice Cards Grid -->
+            <div class="row g-4">
+                <div th:each="n : ${notices}" class="col-md-6 col-lg-4">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-header">
+                            <span class="badge bg-primary-subtle text-primary fw-semibold" th:text="${n.category}">Exam</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span th:if="${n.priority == 'Urgent'}" class="badge bg-danger-subtle text-danger">Urgent</span>
+                                <span th:if="${n.priority == 'High'}" class="badge bg-warning-subtle text-warning">High</span>
+                                <span th:if="${n.priority == 'Normal'}" class="badge bg-secondary-subtle text-secondary">Normal</span>
+                                <button class="btn btn-xs btn-outline-danger border-0 p-1" th:data-url="@{'/api/admin/notices/' + ${n.id}}" data-type="Notice" onclick="deleteEntity(this.getAttribute('data-url'), this.getAttribute('data-type'))">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-custom-body">
+                            <h6 class="fw-bold text-dark mb-2" th:text="${n.title}">Notice Headline</h6>
+                            <p class="text-secondary small mb-3" style="min-height: 50px;" th:text="${n.content}">Notice content body...</p>
+                            <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                                <small class="text-muted"><i class="bi bi-calendar3 me-1"></i> <span th:text="${n.postedDate}">2026-10-07</span></small>
+                                <span class="badge bg-light text-dark border small" th:text="'Target: ' + ${n.targetAudience}">ALL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${#lists.isEmpty(notices)}" class="col-12">
+                    <div class="card-custom p-5 text-center text-muted">
+                        <i class="bi bi-megaphone fs-1 d-block mb-2 text-secondary"></i>
+                        No notices published yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Publish Notice -->
+<div class="modal fade" id="publishNoticeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-megaphone text-primary me-2"></i>Publish Notice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="noticeForm" onsubmit="handleSaveNotice(event)">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Notice Title <span class="text-danger">*</span></label>
+                        <input type="text" id="notTitle" class="form-control" placeholder="e.g. Mid-Term Examination Schedule" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Category <span class="text-danger">*</span></label>
+                            <select id="notCategory" class="form-select" required>
+                                <option value="General">General</option>
+                                <option value="Exam">Exam</option>
+                                <option value="Attendance">Attendance</option>
+                                <option value="Fee">Fee</option>
+                                <option value="Holiday">Holiday</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Target Audience</label>
+                            <select id="notTarget" class="form-select" onchange="handleTargetChange()">
+                                <option value="ALL">All Users</option>
+                                <option value="STUDENT">All Students</option>
+                                <option value="TEACHER">All Faculty</option>
+                                <option value="DEPARTMENT">Specific Department</option>
+                                <option value="COURSE">Specific Course</option>
+                                <option value="SEMESTER">Specific Semester</option>
+                                <option value="SECTION">Specific Section</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Targeting Filters -->
+                    <div id="targetDeptGroup" class="mb-3 d-none">
+                        <label class="form-label small fw-semibold">Select Department</label>
+                        <select id="notDept" class="form-select">
+                            <option value="">-- Choose Department --</option>
+                            <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}">Computer Science</option>
+                        </select>
+                    </div>
+
+                    <div id="targetCourseGroup" class="mb-3 d-none">
+                        <label class="form-label small fw-semibold">Select Course</label>
+                        <select id="notCourse" class="form-select">
+                            <option value="">-- Choose Course --</option>
+                            <option th:each="c : ${courses}" th:value="${c.id}" th:text="${c.name}">B.Tech CSE</option>
+                        </select>
+                    </div>
+
+                    <div id="targetSemGroup" class="mb-3 d-none">
+                        <label class="form-label small fw-semibold">Select Semester</label>
+                        <select id="notSemester" class="form-select">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                            <option value="3">Semester 3</option>
+                            <option value="4">Semester 4</option>
+                            <option value="5">Semester 5</option>
+                            <option value="6">Semester 6</option>
+                            <option value="7">Semester 7</option>
+                            <option value="8">Semester 8</option>
+                        </select>
+                    </div>
+
+                    <div id="targetSecGroup" class="mb-3 d-none">
+                        <label class="form-label small fw-semibold">Select Section</label>
+                        <select id="notSection" class="form-select">
+                            <option value="">-- Choose Section --</option>
+                            <option th:each="s : ${sections}" th:value="${s.id}" th:text="${s.name + ' (' + (s.course != null ? s.course.code : 'Course') + ' Sem ' + s.semester + ')'}">Section A</option>
+                        </select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Priority</label>
+                            <select id="notPriority" class="form-select">
+                                <option value="Normal">Normal</option>
+                                <option value="High">High</option>
+                                <option value="Urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Publish Date</label>
+                            <input type="date" id="notDate" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Notice Description <span class="text-danger">*</span></label>
+                        <textarea id="notContent" class="form-control" rows="4" placeholder="Detailed content of announcement..." required></textarea>
+                    </div>
+                    <div class="modal-footer px-0 pb-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill me-1"></i> Publish Now</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('notDate').valueAsDate = new Date();
+});
+
+function handleTargetChange() {
+    const val = document.getElementById('notTarget').value;
+    document.getElementById('targetDeptGroup').classList.toggle('d-none', val !== 'DEPARTMENT');
+    document.getElementById('targetCourseGroup').classList.toggle('d-none', val !== 'COURSE' && val !== 'SEMESTER');
+    document.getElementById('targetSemGroup').classList.toggle('d-none', val !== 'SEMESTER');
+    document.getElementById('targetSecGroup').classList.toggle('d-none', val !== 'SECTION');
+}
+
+async function handleSaveNotice(e) {
+    e.preventDefault();
+    const target = document.getElementById('notTarget').value;
+    const payload = {
+        title: document.getElementById('notTitle').value,
+        category: document.getElementById('notCategory').value,
+        targetAudience: target,
+        priority: document.getElementById('notPriority').value,
+        postedDate: document.getElementById('notDate').value,
+        content: document.getElementById('notContent').value
+    };
+
+    if (target === 'DEPARTMENT') {
+        const deptId = document.getElementById('notDept').value;
+        if (!deptId) { showToast('Please select a department', true); return; }
+        payload.department = { id: parseInt(deptId) };
+    } else if (target === 'COURSE') {
+        const courseId = document.getElementById('notCourse').value;
+        if (!courseId) { showToast('Please select a course', true); return; }
+        payload.course = { id: parseInt(courseId) };
+    } else if (target === 'SEMESTER') {
+        const courseId = document.getElementById('notCourse').value;
+        if (courseId) payload.course = { id: parseInt(courseId) };
+        payload.semester = parseInt(document.getElementById('notSemester').value);
+    } else if (target === 'SECTION') {
+        const secId = document.getElementById('notSection').value;
+        if (!secId) { showToast('Please select a section', true); return; }
+        payload.section = { id: parseInt(secId) };
+    }
+
+    try {
+        const response = await fetch('/api/admin/notices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        if (response.ok) {
+            showToast('Notice published successfully!');
+            setTimeout(() => window.location.reload(), 700);
+        } else {
+            showToast(res.message || 'Failed to publish notice', true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+</script>
+</body>
+</html>

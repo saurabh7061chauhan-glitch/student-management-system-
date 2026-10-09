@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Student Grievances & Helpdesk')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='grievances', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Grievances & Helpdesk', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">University Grievance Redressal & Helpdesk</h4>
+                    <p class="text-secondary small mb-0">Lodge academic, financial, or campus concerns, track investigation milestones, and evaluate redressal quality.</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newGrievanceModal">
+                        <i class="bi bi-pencil-square me-1"></i> Lodge New Grievance
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- My Grievances History List -->
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-shield-check me-2 text-primary"></i> My Active & Resolved Grievances (<span th:text="${#lists.size(grievances)}">0</span>)
+                    </h6>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Ticket #</th>
+                                <th>Subject / Title</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Assigned To</th>
+                                <th>Official Response</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(grievances)}">
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-chat-square-heart fs-3 d-block mb-1"></i>
+                                    You have not submitted any grievance tickets. Click "Lodge New Grievance" if you need assistance.
+                                </td>
+                            </tr>
+                            <tr th:each="g : ${grievances}">
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace" th:text="${g.ticketNumber}">GRV-102931</span>
+                                    <span th:if="${g.escalated}" class="badge bg-danger text-white d-block mt-1">URGENT</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${g.title}">Title</div>
+                                    <small class="text-muted d-block text-truncate" style="max-width: 250px;" th:text="${g.description}">Description</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-secondary border" th:text="${g.category}">ACADEMIC</span>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${g.priority == 'URGENT' ? 'bg-danger' : (g.priority == 'HIGH' ? 'bg-warning text-dark' : 'bg-secondary')}" th:text="${g.priority}">MEDIUM</span>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${g.status == 'RESOLVED' || g.status == 'CLOSED' ? 'bg-success-subtle text-success border border-success-subtle' : (g.status == 'OPEN' ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle')}" th:text="${g.status}">OPEN</span>
+                                </td>
+                                <td>
+                                    <span th:if="${g.assignedTeacher != null}" class="text-dark fw-medium" th:text="${g.assignedTeacher.name}">Dr. Miller</span>
+                                    <span th:unless="${g.assignedTeacher != null}" class="text-muted fst-italic">Under Review</span>
+                                </td>
+                                <td>
+                                    <div th:if="${g.officialResponse != null && !g.officialResponse.isEmpty()}">
+                                        <div class="small fw-semibold text-dark text-truncate" style="max-width: 200px;" th:text="${g.officialResponse}">Response text...</div>
+                                        <small class="text-muted">By <span th:text="${g.responseBy != null ? g.responseBy : 'Staff'}">Staff</span></small>
+                                    </div>
+                                    <div th:unless="${g.officialResponse != null && !g.officialResponse.isEmpty()}" class="text-muted small fst-italic">
+                                        Pending response
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <button th:if="${g.status == 'RESOLVED'}" class="btn btn-sm btn-success" data-bs-toggle="modal" th:data-bs-target="'#closeModal-' + ${g.id}">
+                                        <i class="bi bi-check2-circle me-1"></i> Close & Rate
+                                    </button>
+                                    <span th:if="${g.status == 'CLOSED'}" class="badge bg-light text-muted border">
+                                        <i class="bi bi-star-fill text-warning me-1"></i> <span th:text="${g.studentRating != null ? g.studentRating + '/5' : 'Closed'}">5/5</span>
+                                    </span>
+
+                                    <!-- Close and Rate Modal -->
+                                    <div th:if="${g.status == 'RESOLVED'}" class="modal fade text-start" th:id="'closeModal-' + ${g.id}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form th:action="@{/student/grievances/{id}/close(id=${g.id})}" method="post">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Close Ticket & Provide Feedback</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="p-2 mb-3 bg-light rounded small">
+                                                            <strong>Official Resolution:</strong>
+                                                            <p class="mb-0 text-muted" th:text="${g.officialResponse}">Resolution text...</p>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-semibold">Satisfaction Rating (1 to 5 Stars)</label>
+                                                            <select name="rating" class="form-select" required>
+                                                                <option value="5">⭐⭐⭐⭐⭐ Excellent (5 Stars)</option>
+                                                                <option value="4">⭐⭐⭐⭐ Good (4 Stars)</option>
+                                                                <option value="3">⭐⭐⭐ Satisfactory (3 Stars)</option>
+                                                                <option value="2">⭐⭐ Needs Improvement (2 Stars)</option>
+                                                                <option value="1">⭐ Unsatisfied (1 Star)</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-semibold">Feedback / Comments</label>
+                                                            <textarea name="feedback" class="form-control" rows="2" placeholder="Was the resolution helpful?"></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-success btn-sm">Confirm & Close Ticket</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal Lodge New Grievance -->
+<div class="modal fade" id="newGrievanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/student/grievances/submit}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Lodge Grievance / Complaint</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Subject / Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="Brief summary of your grievance" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Category</label>
+                            <select name="category" class="form-select" required>
+                                <option value="ACADEMIC">Academic</option>
+                                <option value="EXAMINATION">Examination</option>
+                                <option value="FINANCE_FEE">Finance & Fees</option>
+                                <option value="INFRASTRUCTURE">Campus Infrastructure</option>
+                                <option value="HOSTEL">Hostel & Dining</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Priority</label>
+                            <select name="priority" class="form-select" required>
+                                <option value="LOW">Low</option>
+                                <option value="MEDIUM" selected>Medium</option>
+                                <option value="HIGH">High</option>
+                                <option value="URGENT">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Detailed Description</label>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Describe the incident, dates, course codes, or any relevant details..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Submit Grievance</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

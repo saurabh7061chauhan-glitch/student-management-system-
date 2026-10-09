@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title=${assignment.title} + ' - Assignment Details')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='assignments', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Assignment Details', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Back Button and Breadcrumbs -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                <a th:href="@{/student/assignments}" class="btn btn-outline-secondary btn-sm fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Assignments
+                </a>
+                <div class="d-flex align-items-center gap-2">
+                    <a th:if="${assignment.subject != null}" th:href="@{/student/subjects/{id}(id=${assignment.subject.id})}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-journal-bookmark me-1"></i> <span th:text="${assignment.subject.name}">Subject</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Flash Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Assignment Header Banner -->
+            <div class="card-custom mb-4 bg-white border">
+                <div class="card-custom-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="rounded-3 bg-primary text-white p-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                <i class="bi bi-pencil-square fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span class="badge bg-primary px-3 py-1" th:text="${assignment.subject != null ? assignment.subject.code : 'CODE'}">CS301</span>
+                                    <span class="badge bg-light text-dark border" th:text="${assignment.maxMarks} + ' Points'">20 Points</span>
+                                    <span th:if="${assignment.section != null}" class="badge bg-secondary-subtle text-dark" th:text="'Section ' + ${assignment.section.displayName}">Section A</span>
+                                    <span th:unless="${assignment.section != null}" class="badge bg-secondary-subtle text-dark">All Sections</span>
+                                </div>
+                                <h3 class="fw-bold mb-1 text-dark" th:text="${assignment.title}">Assignment Title</h3>
+                                <div class="small text-muted">
+                                    <i class="bi bi-person-badge me-1"></i> Assigned by 
+                                    <strong class="text-dark" th:text="${assignment.teacher != null ? assignment.teacher.name : 'Faculty Instructor'}">Dr. Turing</strong>
+                                    <span class="mx-2">•</span>
+                                    <i class="bi bi-calendar-check me-1"></i> Posted on: 
+                                    <span th:text="${#temporals.format(assignment.createdAt, 'dd MMM yyyy, HH:mm')}">01 Oct 2026</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Badge Pill -->
+                        <div>
+                            <div th:if="${submission != null}">
+                                <span th:if="${'Evaluated'.equalsIgnoreCase(submission.status)}" class="badge bg-success-subtle text-success fs-6 px-3 py-2 border border-success-subtle">
+                                    <i class="bi bi-award-fill me-1"></i> Graded: <span th:text="${submission.obtainedMarks} + ' / ' + ${assignment.maxMarks}">Score</span>
+                                </span>
+                                <span th:if="${'Submitted'.equalsIgnoreCase(submission.status)}" class="badge bg-primary-subtle text-primary fs-6 px-3 py-2 border border-primary-subtle">
+                                    <i class="bi bi-check2-all me-1"></i> Submitted
+                                </span>
+                                <span th:if="${'Late'.equalsIgnoreCase(submission.status)}" class="badge bg-danger-subtle text-danger fs-6 px-3 py-2 border border-danger-subtle">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Late Submission
+                                </span>
+                            </div>
+                            <div th:unless="${submission != null}">
+                                <span th:if="${assignment.isOverdue()}" class="badge bg-danger-subtle text-danger fs-6 px-3 py-2 border border-danger-subtle">
+                                    <i class="bi bi-clock-history me-1"></i> Overdue (Pending)
+                                </span>
+                                <span th:unless="${assignment.isOverdue()}" class="badge bg-warning-subtle text-warning-emphasis fs-6 px-3 py-2 border border-warning-subtle">
+                                    <i class="bi bi-hourglass-split me-1"></i> Pending Submission
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Row: Details & Instructions vs Submission Form -->
+            <div class="row g-4">
+                <!-- Left Column: Details & Instructions -->
+                <div class="col-lg-7">
+                    <div class="card-custom bg-white border mb-4">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-file-text text-primary me-2"></i>Assignment Instructions</span>
+                        </div>
+                        <div class="card-custom-body p-4">
+                            <div class="mb-4">
+                                <h6 class="text-secondary small fw-bold text-uppercase mb-2">Description</h6>
+                                <p class="text-dark" style="white-space: pre-wrap; line-height: 1.6;" th:text="${assignment.description}">Assignment instructions and prompt details go here.</p>
+                            </div>
+
+                            <div class="p-3 bg-light rounded-3 border mb-3">
+                                <div class="row g-2">
+                                    <div class="col-sm-6">
+                                        <div class="text-secondary small">Course / Subject</div>
+                                        <div class="fw-bold text-dark" th:text="${assignment.subject != null ? assignment.subject.name : 'N/A'}">Data Structures</div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="text-secondary small">Maximum Marks</div>
+                                        <div class="fw-bold text-dark" th:text="${assignment.maxMarks} + ' pts'">20 pts</div>
+                                    </div>
+                                    <div class="col-sm-6 mt-2">
+                                        <div class="text-secondary small">Due Date & Time</div>
+                                        <div class="fw-bold" th:classappend="${assignment.isOverdue() ? 'text-danger' : 'text-primary'}"
+                                             th:text="${#temporals.format(assignment.deadline, 'EEEE, dd MMMM yyyy - hh:mm a')}">Deadline</div>
+                                    </div>
+                                    <div class="col-sm-6 mt-2">
+                                        <div class="text-secondary small">Deadline Status</div>
+                                        <div th:if="${assignment.isOverdue()}" class="text-danger fw-bold">
+                                            <i class="bi bi-exclamation-circle-fill me-1"></i> Passed
+                                        </div>
+                                        <div th:unless="${assignment.isOverdue()}" class="text-success fw-bold">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Open for Submissions
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Instructor Attached Reference Files -->
+                            <div th:if="${assignment.attachmentPath != null}" class="p-3 rounded-3 border border-primary-subtle bg-primary-subtle d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="bi bi-file-earmark-arrow-down-fill fs-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-bold text-dark small">Instructor Resource Attachment</div>
+                                        <small class="text-secondary">Download instructions, reference material, or starter files.</small>
+                                    </div>
+                                </div>
+                                <a th:href="${assignment.attachmentPath}" target="_blank" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-download me-1"></i> Download File
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Submission Status & Action Form -->
+                <div class="col-lg-5">
+                    <!-- If already submitted: show submission details & feedback -->
+                    <div th:if="${submission != null}" class="card-custom bg-white border mb-4">
+                        <div class="card-custom-header bg-success-subtle py-3 border-bottom">
+                            <span class="fw-bold text-success"><i class="bi bi-check2-circle me-2"></i>My Submission Details</span>
+                        </div>
+                        <div class="card-custom-body p-4">
+                            <div class="mb-3">
+                                <span class="text-secondary small d-block">Submitted On</span>
+                                <div class="fw-bold text-dark" th:text="${#temporals.format(submission.submittedAt, 'dd MMM yyyy, hh:mm a')}">Timestamp</div>
+                            </div>
+
+                            <div class="mb-3" th:if="${submission.fileName != null}">
+                                <span class="text-secondary small d-block">Uploaded File</span>
+                                <div class="p-2 bg-light rounded-2 border d-flex justify-content-between align-items-center mt-1">
+                                    <div class="small fw-semibold text-truncate" style="max-width: 220px;" th:text="${submission.fileName}">homework.pdf</div>
+                                    <a th:if="${submission.filePath != null}" th:href="${submission.filePath}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2 small">
+                                        <i class="bi bi-download"></i> View
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" th:if="${submission.submissionText != null && !#strings.isEmpty(submission.submissionText)}">
+                                <span class="text-secondary small d-block">Text Submission / Notes</span>
+                                <div class="p-3 bg-light rounded-2 border small text-dark mt-1" style="white-space: pre-wrap;" th:text="${submission.submissionText}">Student notes</div>
+                            </div>
+
+                            <!-- Grading & Feedback from Faculty -->
+                            <div class="p-3 rounded-3 mt-3" th:classappend="${submission.obtainedMarks != null ? 'bg-primary-subtle border border-primary-subtle' : 'bg-light border'}">
+                                <h6 class="fw-bold mb-1" th:classappend="${submission.obtainedMarks != null ? 'text-primary' : 'text-dark'}">
+                                    <i class="bi bi-award me-1"></i> Evaluation & Feedback
+                                </h6>
+                                <div th:if="${submission.obtainedMarks != null}">
+                                    <div class="fs-4 fw-bold text-dark mb-1">
+                                        <span class="text-primary" th:text="${submission.obtainedMarks}">18</span> / <span th:text="${assignment.maxMarks}">20</span> pts
+                                    </div>
+                                    <div th:if="${submission.feedback != null && !#strings.isEmpty(submission.feedback)}" class="small text-secondary mt-2">
+                                        <strong class="text-dark">Faculty Feedback:</strong>
+                                        <blockquote class="mb-0 mt-1 fst-italic" th:text="${submission.feedback}">Great work!</blockquote>
+                                    </div>
+                                </div>
+                                <div th:unless="${submission.obtainedMarks != null}" class="small text-muted">
+                                    Your submission is currently awaiting evaluation by your instructor.
+                                </div>
+                            </div>
+
+                            <!-- Re-submit button if needed -->
+                            <button class="btn btn-outline-primary btn-sm w-100 mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#resubmitForm">
+                                <i class="bi bi-arrow-repeat me-1"></i> Re-submit Work
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submission Form (Visible if not submitted OR inside collapse if resubmitting) -->
+                    <div th:class="${submission != null} ? 'collapse' : ''" id="resubmitForm">
+                        <div class="card-custom bg-white border">
+                            <div class="card-custom-header">
+                                <span class="fw-bold text-dark"><i class="bi bi-upload text-primary me-2"></i>Submit Your Assignment</span>
+                            </div>
+                            <div class="card-custom-body p-4">
+                                <form th:action="@{'/student/assignments/' + ${assignment.id} + '/submit'}" method="post" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold text-dark">Attach Document / Archive</label>
+                                        <input type="file" name="file" class="form-control" accept=".pdf,.doc,.docx,.zip,.rar,.txt,.java,.py,.cpp">
+                                        <div class="form-text small">Accepted formats: PDF, Word, ZIP, Code files (Max: 15MB).</div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-semibold text-dark">Submission Comments / Answers</label>
+                                        <textarea name="submissionText" class="form-control" rows="4" placeholder="Enter online response, code repository link, or notes for your instructor..."></textarea>
+                                    </div>
+
+                                    <div th:if="${assignment.isOverdue()}" class="alert alert-warning small py-2">
+                                        <i class="bi bi-exclamation-triangle me-1"></i> The deadline has passed. This will be marked as a <strong>Late Submission</strong>.
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Confirm & Submit Assignment
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Documents & Certificates')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='documents', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Certificates & Documents', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Printable Certificate Section -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-header">
+                    <span class="fw-bold text-dark"><i class="bi bi-file-earmark-check-fill text-primary me-2"></i>Official Bonafide Certificate</span>
+                    <button class="btn btn-primary btn-sm" onclick="printReport()">
+                        <i class="bi bi-printer me-1"></i> Print Certificate
+                    </button>
+                </div>
+                <div class="card-custom-body p-5 border-start border-4 border-primary bg-white shadow-sm" style="border-radius: var(--radius-md);">
+                    <div class="text-center mb-4">
+                        <div class="d-inline-flex p-3 rounded-circle bg-primary bg-opacity-10 mb-2">
+                            <i class="bi bi-mortarboard-fill fs-2 text-primary"></i>
+                        </div>
+                        <h4 class="fw-bold text-uppercase tracking-wide text-dark mb-1">Office of Academic Administration</h4>
+                        <p class="text-secondary small mb-0">Certified Bonafide Student Statement</p>
+                    </div>
+
+                    <div class="py-3 fs-6 lh-lg text-dark">
+                        <p>
+                            This is to certify that <strong><span th:text="${student.fullName}">Student Name</span></strong>, 
+                            holding Student Registration ID <strong><span th:text="${student.studentId}">STU</span></strong>, 
+                            is a bonafide, regularly enrolled student in the 
+                            <strong><span th:text="${student.department != null ? student.department.name : 'Engineering'}">Department</span></strong> 
+                            pursuing the <strong><span th:text="${student.course != null ? student.course.name : 'Degree'}">Course</span></strong> program.
+                        </p>
+                        <p>
+                            The student is currently active in <strong>Semester <span th:text="${student.semester}">1</span></strong> 
+                            admitted on <strong><span th:text="${student.admissionDate}">Date</span></strong>. 
+                            This certificate is issued upon the student's request for academic and verification purposes.
+                        </p>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-end mt-5 pt-4 border-top">
+                        <div>
+                            <small class="text-muted d-block">Certificate Reference: <strong>CERT-<span th:text="${student.studentId}">ID</span></strong></small>
+                            <small class="text-muted">Issued Date: <strong><span th:text="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">Date</span></strong></small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold text-dark border-top border-dark pt-1" style="width: 180px;">Registrar / Dean</div>
+                            <small class="text-secondary">Authorized Signature</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents Download Cards -->
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-body d-flex flex-column justify-content-between">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <i class="bi bi-person-badge-fill fs-1 text-primary"></i>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">Student ID Card</h6>
+                                    <small class="text-muted">Digital verification badge with QR</small>
+                                </div>
+                            </div>
+                            <a th:href="@{/student/id-card/pdf}" target="_blank" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-file-earmark-pdf me-1"></i> Download ID Card (PDF)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-body d-flex flex-column justify-content-between">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <i class="bi bi-file-earmark-pdf fs-1 text-danger"></i>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">Grade Marksheet Card</h6>
+                                    <small class="text-muted">Current semester official evaluation</small>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a th:href="@{/student/results}" class="btn btn-outline-secondary btn-sm flex-fill">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                <a th:href="@{/student/results/marksheet/pdf}" target="_blank" class="btn btn-danger btn-sm flex-fill">
+                                    <i class="bi bi-download me-1"></i> PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-body d-flex flex-column justify-content-between">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <i class="bi bi-receipt-cutoff fs-1 text-success"></i>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">Fee Clearance & Invoices</h6>
+                                    <small class="text-muted">Fee receipts & transaction ledger</small>
+                                </div>
+                            </div>
+                            <a th:href="@{/student/fees}" class="btn btn-success btn-sm w-100">
+                                <i class="bi bi-wallet2 me-1"></i> View & Download Receipts
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

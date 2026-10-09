@@ -1,0 +1,12 @@
+{
+  "name": "student-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Student Management System",
+  "scripts": {
+    "dev": "mvnw.cmd spring-boot:run \"-Dspring-boot.run.profiles=h2\"",
+    "dev:mysql": "mvnw.cmd spring-boot:run",
+    "dev:h2": "mvnw.cmd spring-boot:run \"-Dspring-boot.run.profiles=h2\"",
+    "build": "mvnw.cmd clean package"
+  }
+}

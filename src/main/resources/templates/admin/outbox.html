@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Simulated Email Outbox')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='outbox')}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Email Outbox & Dispatches')}"></nav>
+
+        <div class="page-container">
+            <div class="card-custom mb-4 bg-primary-subtle border-primary-subtle">
+                <div class="card-custom-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold text-primary mb-1"><i class="bi bi-info-circle-fill me-2"></i>Testing & Development Outbox Active</h6>
+                        <p class="text-secondary small mb-0">All verification and password recovery emails sent by Spring Boot are logged below with functional action URLs for zero-friction testing.</p>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Refresh Outbox
+                    </button>
+                </div>
+            </div>
+
+            <!-- Email Records Table -->
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <span class="fw-bold text-dark"><i class="bi bi-envelope-paper-heart-fill text-primary me-2"></i>Recent Outbox Dispatches (<span th:text="${#lists.size(emails)}">0</span>)</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Sent Time</th>
+                                <th>To Recipient</th>
+                                <th>Subject</th>
+                                <th>Body Summary</th>
+                                <th>Action Link</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="m : ${emails}">
+                                <td class="small text-muted" th:text="${#temporals.format(m.sentAt, 'yyyy-MM-dd HH:mm:ss')}">Time</td>
+                                <td class="fw-bold text-dark" th:text="${m.to}">student@college.edu</td>
+                                <td class="fw-semibold text-dark" th:text="${m.subject}">Verify Account</td>
+                                <td class="small text-secondary" style="max-width: 250px;">
+                                    <span class="text-truncate d-block" th:text="${m.content}">Body preview...</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <a th:href="${m.link}" target="_blank" class="btn btn-xs btn-primary py-1 px-2 small">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i> Visit URL
+                                        </a>
+                                        <button class="btn btn-xs btn-light border py-1 px-2 small" th:data-link="${m.link}" onclick="copyLink(this.getAttribute('data-link'))" title="Copy Link">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(emails)}">
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                                    No outgoing emails have been dispatched yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+
+<script>
+function copyLink(link) {
+    navigator.clipboard.writeText(link).then(() => {
+        showToast('Link copied to clipboard!');
+    }).catch(() => {
+        showToast('Could not copy link', true);
+    });
+}
+</script>
+</body>
+</html>

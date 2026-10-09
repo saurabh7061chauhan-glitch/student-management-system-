@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Campus Notices')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='notifications', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Notices & Alerts', student=${student})}"></nav>
+
+        <div class="page-container">
+            <div class="card-custom mb-4">
+                <div class="card-custom-header">
+                    <div class="d-flex align-items-center justify-content-between w-100">
+                        <span class="fw-bold text-dark"><i class="bi bi-bell-fill text-warning me-2"></i>Campus Bulletins (<span th:text="${#lists.size(notices)}">0</span>)</span>
+                        <span class="badge bg-danger rounded-pill" th:if="${unreadCount != null && unreadCount > 0}" th:text="${unreadCount + ' Unread'}">0 Unread</span>
+                    </div>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div th:each="n : ${notices}" class="list-group-item p-4">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${n.category}">Category</span>
+                                    <span th:if="${n.priority == 'Urgent'}" class="badge bg-danger-subtle text-danger">Urgent</span>
+                                    <span th:if="${n.priority == 'High'}" class="badge bg-warning-subtle text-warning">High Priority</span>
+                                    <span th:if="${n.targetAudience != null && n.targetAudience != 'ALL'}" class="badge bg-info-subtle text-info" th:text="${n.targetAudience}">TARGET</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted"><i class="bi bi-calendar3 me-1"></i> <span th:text="${n.postedDate}">2026-10-07</span></small>
+                                    <button class="btn btn-xs btn-outline-primary btn-sm py-0 px-2" th:onclick="'markNoticeRead(' + ${n.id} + ', this)'">
+                                        <i class="bi bi-check2"></i> Mark Read
+                                    </button>
+                                </div>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-2" th:text="${n.title}">Notice Headline</h5>
+                            <p class="text-secondary mb-0" style="white-space: pre-line;" th:text="${n.content}">Detailed body of the announcement...</p>
+                        </div>
+                        <div th:if="${#lists.isEmpty(notices)}" class="text-center text-muted py-5">
+                            <i class="bi bi-bell-slash fs-1 d-block mb-2 text-secondary"></i>
+                            No active campus circulars found.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+
+<script>
+async function markNoticeRead(noticeId, btn) {
+    try {
+        const resp = await fetch('/api/student/notifications/' + noticeId + '/read', { method: 'POST' });
+        if (resp.ok) {
+            btn.className = 'badge bg-success-subtle text-success border-0 py-1 px-2';
+            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Read';
+            btn.disabled = true;
+            showToast('Marked as read');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+</script>
+</body>
+</html>

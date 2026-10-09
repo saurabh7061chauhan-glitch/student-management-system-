@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='My Grades & Results')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='results', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='My Examination Results', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Semester Filter & Action Bar -->
+            <div class="card-custom mb-4 bg-white border">
+                <div class="card-custom-body py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="small fw-bold text-secondary text-uppercase me-2"><i class="bi bi-funnel-fill text-primary me-1"></i>Select Semester:</span>
+                            
+                            <!-- Semester Quick Tabs -->
+                            <div class="btn-group" role="group">
+                                <a th:each="semNum : ${availableSemesters}"
+                                   th:href="@{/student/results(semester=${semNum})}"
+                                   th:classappend="${selectedSemester == semNum ? 'btn-primary' : 'btn-outline-secondary'}"
+                                   class="btn btn-sm fw-semibold">
+                                    <span th:text="'Semester ' + ${semNum}">Semester 1</span>
+                                    <span th:if="${semNum == student.semester}" class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Current</span>
+                                    <span th:if="${semNum < student.semester}" class="badge bg-light text-dark ms-1" style="font-size: 0.65rem;">Previous</span>
+                                </a>
+                                <a th:href="@{/student/results(semester=0)}"
+                                   th:classappend="${selectedSemester == 0 ? 'btn-primary' : 'btn-outline-secondary'}"
+                                   class="btn btn-sm fw-semibold">
+                                    <i class="bi bi-collection me-1"></i> All Semesters (Cumulative)
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <a th:href="@{/student/results/marksheet/pdf(semester=${selectedSemester})}" class="btn btn-primary btn-sm fw-medium shadow-sm">
+                                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download Marksheet PDF
+                            </a>
+                            <button type="button" class="btn btn-outline-primary btn-sm fw-medium shadow-sm" onclick="window.print()">
+                                <i class="bi bi-printer me-1"></i> Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GPA & Summary Header Cards -->
+            <div class="row g-3 mb-4">
+                <!-- Selected Semester SGPA / GPA -->
+                <div class="col-md-3 col-sm-6">
+                    <div class="card-custom p-3 bg-white h-100">
+                        <span class="text-secondary small fw-semibold text-uppercase">
+                            <span th:if="${selectedSemester != null && selectedSemester > 0}" th:text="'Sem ' + ${selectedSemester} + ' SGPA'">Sem SGPA</span>
+                            <span th:if="${selectedSemester == 0}">Cumulative SGPA</span>
+                        </span>
+                        <div class="d-flex align-items-baseline gap-2 mt-2">
+                            <h2 class="fw-bold mb-0 text-primary" th:text="${summary != null ? summary.gpa : '0.0'}">3.8</h2>
+                            <span class="text-muted small">/ 10.0</span>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Status: <strong class="text-success" th:text="${summary != null ? summary.overallStatus : 'Pending'}">Passed</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cumulative CGPA (All Semesters) -->
+                <div class="col-md-3 col-sm-6">
+                    <div class="card-custom p-3 bg-white h-100">
+                        <span class="text-secondary small fw-semibold text-uppercase">Cumulative CGPA (Overall)</span>
+                        <div class="d-flex align-items-baseline gap-2 mt-2">
+                            <h2 class="fw-bold mb-0 text-dark" th:text="${overallSummary != null ? overallSummary.cgpa : '0.0'}">3.8</h2>
+                            <span class="text-muted small">/ 10.0</span>
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Grade: <span class="badge bg-primary-subtle text-primary fw-semibold" th:text="${overallSummary != null ? 'Grade ' + overallSummary.finalGrade : 'Pending'}">Grade A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Percentage Score -->
+                <div class="col-md-3 col-sm-6">
+                    <div class="card-custom p-3 bg-white h-100">
+                        <span class="text-secondary small fw-semibold text-uppercase">
+                            <span th:if="${selectedSemester != null && selectedSemester > 0}" th:text="'Sem ' + ${selectedSemester} + ' Percentage'">Percentage</span>
+                            <span th:if="${selectedSemester == 0}">Overall Percentage</span>
+                        </span>
+                        <div class="d-flex align-items-baseline gap-2 mt-2">
+                            <h2 class="fw-bold mb-0 text-success" th:text="${summary != null ? summary.percentage + '%' : '0%'}">85.0%</h2>
+                        </div>
+                        <div class="small text-muted mt-1" th:text="${summary != null ? (summary.totalMarks + ' / ' + summary.maxPossibleMarks + ' Marks') : '0/0'}">
+                            255 / 300 Marks
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subjects Passed -->
+                <div class="col-md-3 col-sm-6">
+                    <div class="card-custom p-3 bg-white h-100">
+                        <span class="text-secondary small fw-semibold text-uppercase">Subjects Cleared</span>
+                        <div class="d-flex align-items-baseline gap-2 mt-2">
+                            <h2 class="fw-bold mb-0 text-dark" th:text="${summary != null ? summary.passedSubjects + ' / ' + summary.totalSubjects : '0 / 0'}">3 / 3</h2>
+                        </div>
+                        <div class="small text-success mt-1">
+                            <i class="bi bi-check2-all me-1"></i> 100% Clearance Rate
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Marksheet Table -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold text-dark"><i class="bi bi-award-fill text-primary me-2"></i>Official Marksheet</span>
+                        <span class="badge bg-primary-subtle text-primary ms-2"
+                              th:if="${selectedSemester != null && selectedSemester > 0}"
+                              th:text="'Semester ' + ${selectedSemester} + (${selectedSemester < student.semester ? ' (Previous Semester)' : ' (Current Semester)'})">
+                            Semester 3
+                        </span>
+                        <span class="badge bg-secondary-subtle text-secondary ms-2"
+                              th:if="${selectedSemester == 0}">
+                            All Semesters Cumulative
+                        </span>
+                    </div>
+                    <span class="badge bg-light text-muted border" th:text="'Student ID: ' + ${student.studentId}">STU2025001</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">Subject Code</th>
+                                <th style="width: 30%;">Course Title</th>
+                                <th th:if="${selectedSemester == 0}" style="width: 10%;">Semester</th>
+                                <th style="width: 12%;">Internal (30)</th>
+                                <th style="width: 12%;">External (70)</th>
+                                <th style="width: 12%;">Total (100)</th>
+                                <th style="width: 10%;">Grade</th>
+                                <th style="width: 14%;">Result Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="m : ${marks}">
+                                <td class="fw-bold text-dark" th:text="${m.subject != null ? m.subject.code : ''}">CS301</td>
+                                <td>
+                                    <div class="fw-semibold text-dark">
+                                        <a th:if="${m.subject != null}" th:href="@{/student/subjects/{id}(id=${m.subject.id})}"
+                                           class="text-decoration-none text-dark hover-primary"
+                                           th:text="${m.subject.name}">Data Structures</a>
+                                        <span th:unless="${m.subject != null}">N/A</span>
+                                    </div>
+                                    <small class="text-muted" th:text="${m.subject != null && m.subject.credits != null ? m.subject.credits + ' Credits' : ''}">4 Credits</small>
+                                </td>
+                                <td th:if="${selectedSemester == 0}">
+                                    <span class="badge bg-light text-dark border" th:text="'Sem ' + ${m.semester}">Sem 1</span>
+                                </td>
+                                <td th:text="${m.internalMarks}">27.0</td>
+                                <td th:text="${m.externalMarks}">65.0</td>
+                                <td class="fw-bold text-dark" th:text="${m.totalMarks}">92.0</td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary fw-bold fs-6" th:text="${m.grade}">A+</span>
+                                </td>
+                                <td>
+                                    <span th:if="${'Pass'.equalsIgnoreCase(m.status)}" class="badge bg-success-subtle text-success">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Pass
+                                    </span>
+                                    <span th:unless="${'Pass'.equalsIgnoreCase(m.status)}" class="badge bg-danger-subtle text-danger">
+                                        <i class="bi bi-x-circle-fill me-1"></i> Fail
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(marks)}">
+                                <td th:colspan="${selectedSemester == 0 ? 8 : 7}" class="text-center text-muted py-5">
+                                    <i class="bi bi-award fs-1 d-block mb-2 text-secondary"></i>
+                                    No marks recorded for this semester yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot th:if="${summary != null && !#lists.isEmpty(marks)}">
+                            <tr class="table-light">
+                                <td th:colspan="${selectedSemester == 0 ? 3 : 2}" class="fw-bold text-end">Grand Total Score:</td>
+                                <td colspan="2" class="fw-bold text-primary" th:text="${summary.totalMarks + ' / ' + summary.maxPossibleMarks}">250 / 300</td>
+                                <td colspan="3" class="fw-bold text-success" th:text="'Percentage: ' + ${summary.percentage} + '% (SGPA: ' + ${summary.sgpa} + ')'">83.3%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Previous Semesters Performance History Table ("Pichle Semesters Ka Record") -->
+            <div class="card-custom mb-4" th:if="${!#lists.isEmpty(semesterHistory)}">
+                <div class="card-custom-header">
+                    <span class="fw-bold text-dark">
+                        <i class="bi bi-clock-history text-primary me-2"></i>Previous & Current Semesters Performance History (Pichle Semesters Ka Result)
+                    </span>
+                    <small class="text-muted">Compare marks, SGPA and status across each semester</small>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Semester</th>
+                                <th>Total Credits</th>
+                                <th>Subjects</th>
+                                <th>Marks Obtained / Max</th>
+                                <th>Percentage</th>
+                                <th>SGPA</th>
+                                <th>Letter Grade</th>
+                                <th>Result</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="hist : ${semesterHistory}"
+                                th:classappend="${selectedSemester == hist.semester ? 'table-primary bg-primary-subtle' : ''}">
+                                <td>
+                                    <strong class="text-dark" th:text="'Semester ' + ${hist.semester}">Semester 1</strong>
+                                    <span th:if="${hist.semester == student.semester}" class="badge bg-warning text-dark ms-1">Current</span>
+                                    <span th:if="${hist.semester < student.semester}" class="badge bg-secondary-subtle text-secondary ms-1">Previous</span>
+                                </td>
+                                <td th:text="${hist.totalCredits + ' Credits'}">12 Credits</td>
+                                <td th:text="${hist.passedSubjects + ' / ' + hist.totalSubjects + ' Passed'}">3 / 3 Passed</td>
+                                <td class="fw-semibold text-dark" th:text="${hist.totalMarksObtained + ' / ' + hist.totalMaxMarks}">270 / 300</td>
+                                <td class="fw-bold text-primary" th:text="${hist.percentage + '%'}">90%</td>
+                                <td class="fw-bold text-dark" th:text="${hist.sgpa}">9.0</td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary fw-bold" th:text="${hist.grade}">A+</span>
+                                </td>
+                                <td>
+                                    <span th:if="${'Passed'.equalsIgnoreCase(hist.status)}" class="badge bg-success-subtle text-success">
+                                        <i class="bi bi-check-circle-fill me-1"></i> PASS
+                                    </span>
+                                    <span th:unless="${'Passed'.equalsIgnoreCase(hist.status)}" class="badge bg-warning-subtle text-warning" th:text="${hist.status}">
+                                        Needs Improvement
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a th:href="@{/student/results(semester=${hist.semester})}" class="btn btn-sm btn-outline-primary py-1 px-2 fw-medium">
+                                        <i class="bi bi-eye-fill me-1"></i> View Marksheet
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='System Audit Logs')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <!-- Sidebar -->
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='audit-logs')}"></aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='System Audit Logs')}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Security & System Audit Logs</h4>
+                    <p class="text-secondary small mb-0">Immutable tracking of system actions, role access, and administrative operations.</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success-subtle text-success border px-2 py-1 small">
+                        <i class="bi bi-shield-lock-fill me-1"></i> BCrypt & RBAC Monitored
+                    </span>
+                </div>
+            </div>
+
+            <!-- Filter Card -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-body p-3">
+                    <form th:action="@{/admin/audit-logs}" method="get" class="row g-2 align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                                <input type="text" name="search" th:value="${currentSearch}" class="form-control" placeholder="Search user, IP, or details...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="role" class="form-select form-select-sm">
+                                <option value="">All Roles</option>
+                                <option value="ADMIN" th:selected="${currentRole == 'ADMIN'}">ADMIN</option>
+                                <option value="FACULTY" th:selected="${currentRole == 'FACULTY'}">FACULTY</option>
+                                <option value="STUDENT" th:selected="${currentRole == 'STUDENT'}">STUDENT</option>
+                                <option value="ANONYMOUS" th:selected="${currentRole == 'ANONYMOUS'}">ANONYMOUS</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="action" class="form-select form-select-sm">
+                                <option value="">All Actions</option>
+                                <option value="LOGIN_SUCCESS" th:selected="${currentAction == 'LOGIN_SUCCESS'}">LOGIN_SUCCESS</option>
+                                <option value="LOGIN_FAILURE" th:selected="${currentAction == 'LOGIN_FAILURE'}">LOGIN_FAILURE</option>
+                                <option value="CREATE_STUDENT" th:selected="${currentAction == 'CREATE_STUDENT'}">CREATE_STUDENT</option>
+                                <option value="UPDATE_STUDENT" th:selected="${currentAction == 'UPDATE_STUDENT'}">UPDATE_STUDENT</option>
+                                <option value="CREATE_SECTION" th:selected="${currentAction == 'CREATE_SECTION'}">CREATE_SECTION</option>
+                                <option value="ASSIGN_STUDENT_SECTION" th:selected="${currentAction == 'ASSIGN_STUDENT_SECTION'}">ASSIGN_STUDENT_SECTION</option>
+                                <option value="QR_SESSION_STARTED" th:selected="${currentAction == 'QR_SESSION_STARTED'}">QR_SESSION_STARTED</option>
+                                <option value="QR_ATTENDANCE_MARKED" th:selected="${currentAction == 'QR_ATTENDANCE_MARKED'}">QR_ATTENDANCE_MARKED</option>
+                                <option value="CREATE_ASSIGNMENT" th:selected="${currentAction == 'CREATE_ASSIGNMENT'}">CREATE_ASSIGNMENT</option>
+                                <option value="SUBMIT_ASSIGNMENT" th:selected="${currentAction == 'SUBMIT_ASSIGNMENT'}">SUBMIT_ASSIGNMENT</option>
+                                <option value="EVALUATE_SUBMISSION" th:selected="${currentAction == 'EVALUATE_SUBMISSION'}">EVALUATE_SUBMISSION</option>
+                                <option value="RECORD_FEE" th:selected="${currentAction == 'RECORD_FEE'}">RECORD_FEE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-funnel-fill me-1"></i> Filter
+                            </button>
+                            <a th:href="@{/admin/audit-logs}" class="btn btn-light btn-sm">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Audit Logs Table -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark"><i class="bi bi-list-check me-2 text-primary"></i>Audit Log Stream</div>
+                    <span class="badge bg-light text-muted border" th:text="${logPage.totalElements} + ' Total Events'">0 Events</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Action</th>
+                                <th>Entity Target</th>
+                                <th>Details</th>
+                                <th>Client IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="log : ${logPage.content}">
+                                <td class="small text-muted" style="white-space: nowrap;" th:text="${#temporals.format(log.timestamp, 'yyyy-MM-dd HH:mm:ss')}">2025-01-01 12:00:00</td>
+                                <td>
+                                    <span class="fw-semibold text-dark small" th:text="${log.username}">admin</span>
+                                </td>
+                                <td>
+                                    <span th:if="${log.role == 'ADMIN'}" class="badge bg-danger-subtle text-danger small">ADMIN</span>
+                                    <span th:if="${log.role == 'FACULTY'}" class="badge bg-info-subtle text-info small">FACULTY</span>
+                                    <span th:if="${log.role == 'STUDENT'}" class="badge bg-primary-subtle text-primary small">STUDENT</span>
+                                    <span th:if="${log.role != 'ADMIN' and log.role != 'FACULTY' and log.role != 'STUDENT'}" class="badge bg-light text-dark border small" th:text="${log.role}">ANONYMOUS</span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold small text-dark" th:text="${log.action}">LOGIN_SUCCESS</span>
+                                </td>
+                                <td>
+                                    <span th:if="${log.entityType != null}" class="badge bg-light text-secondary border small" th:text="${log.entityType + (log.entityId != null ? ' #' + log.entityId : '')}">Student #1</span>
+                                    <span th:if="${log.entityType == null}" class="text-muted small">-</span>
+                                </td>
+                                <td>
+                                    <span class="small text-dark" th:text="${log.details}">User successfully logged in</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-muted border small font-monospace" th:text="${log.ipAddress}">127.0.0.1</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${logPage.empty}">
+                                <td colspan="7" class="text-center text-muted py-4">No audit logs matching criteria.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div th:if="${logPage.totalPages > 1}" class="card-custom-body border-top py-3 d-flex justify-content-between align-items-center">
+                    <small class="text-muted" th:text="'Page ' + (${logPage.number} + 1) + ' of ' + ${logPage.totalPages}">Page 1 of 1</small>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item" th:classappend="${logPage.first ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/admin/audit-logs(page=${logPage.number - 1}, search=${currentSearch}, role=${currentRole}, action=${currentAction})}">&laquo; Prev</a>
+                            </li>
+                            <li class="page-item" th:classappend="${logPage.last ? 'disabled' : ''}">
+                                <a class="page-link" th:href="@{/admin/audit-logs(page=${logPage.number + 1}, search=${currentSearch}, role=${currentRole}, action=${currentAction})}">Next &raquo;</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+</body>
+</html>

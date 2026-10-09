@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Examinations & Schedules')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='exams', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Examinations & Hall Ticket', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">University Examinations & Hall Ticket Schedule</h4>
+                    <p class="text-secondary small mb-0">View scheduled examination slots, allotted rooms, invigilators, and published test results.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i> Print Hall Ticket
+                    </button>
+                    <a th:href="@{/student/results}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-award me-1"></i> Full Results & SGPA
+                    </a>
+                </div>
+            </div>
+
+            <!-- Published Exam Schedules -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-header">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-calendar2-week-fill me-2 text-primary"></i> Scheduled Examination Slots
+                    </h6>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Examination</th>
+                                <th>Subject Code & Name</th>
+                                <th>Date</th>
+                                <th>Timing</th>
+                                <th>Hall / Seating</th>
+                                <th>Max Marks</th>
+                                <th>Invigilator</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(schedules)}">
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-calendar-check fs-3 d-block mb-1"></i>
+                                    No published examination schedules found for Semester <span th:text="${student.semester}">1</span> at this moment.
+                                </td>
+                            </tr>
+                            <tr th:each="s : ${schedules}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${s.examination.name}">Spring 2026 Mid-Term</div>
+                                    <span class="badge bg-light text-secondary border" th:text="${s.examination.examType}">MID_TERM</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary fw-bold font-monospace" th:text="${s.subject.code}">CS101</span>
+                                    <div class="fw-semibold text-dark mt-1" th:text="${s.subject.name}">Programming in Java</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark"><i class="bi bi-calendar-event me-1 text-primary"></i><span th:text="${s.examDate}">2026-04-10</span></div>
+                                </td>
+                                <td>
+                                    <small class="text-muted"><span th:text="${s.startTime}">10:00 AM</span> - <span th:text="${s.endTime}">01:00 PM</span></small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-subtle text-secondary" th:text="${s.roomNumber}">Hall 101</span>
+                                </td>
+                                <td>
+                                    <strong th:text="${s.maxMarks}">100</strong>
+                                </td>
+                                <td>
+                                    <small class="text-dark" th:text="${s.invigilator != null ? s.invigilator.name : 'Supervised Duty'}">Faculty Member</small>
+                                </td>
+                                <td>
+                                    <span th:if="${s.finalized}" class="badge bg-info-subtle text-info border border-info-subtle">
+                                        <i class="bi bi-check-circle me-1"></i> Evaluated
+                                    </span>
+                                    <span th:unless="${s.finalized}" class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                        <i class="bi bi-clock me-1"></i> Upcoming
+                                    </span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Published Exam Results -->
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-journal-check me-2 text-primary"></i> Examination Scores & Assessment Reports
+                    </h6>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Subject</th>
+                                <th>Examination</th>
+                                <th>Score Obtained</th>
+                                <th>Max Marks</th>
+                                <th>Grade</th>
+                                <th>Result Status</th>
+                                <th>Evaluation Remarks</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(results)}">
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    <i class="bi bi-file-earmark-text fs-3 d-block mb-1"></i>
+                                    No examination results published yet.
+                                </td>
+                            </tr>
+                            <tr th:each="r : ${results}">
+                                <td>
+                                    <span class="fw-semibold text-dark" th:text="${r.examSchedule.subject.name}">Database Systems</span>
+                                    <small class="text-muted d-block" th:text="${r.examSchedule.subject.code}">CS201</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${r.examSchedule.examination.name}">Mid-Term Exam</span>
+                                </td>
+                                <td>
+                                    <strong class="fs-6 text-primary" th:text="${r.marksObtained}">85.0</strong>
+                                </td>
+                                <td>
+                                    <span class="text-muted" th:text="${r.maxMarks}">100.0</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary" th:text="${r.grade}">A</span>
+                                </td>
+                                <td>
+                                    <span class="badge" th:classappend="${r.status == 'Pass' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}"
+                                          th:text="${r.status}">Pass</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted" th:text="${r.remarks != null && !r.remarks.isEmpty() ? r.remarks : 'Good performance'}">Evaluated</small>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

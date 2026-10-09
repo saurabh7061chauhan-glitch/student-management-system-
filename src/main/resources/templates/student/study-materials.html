@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Course Study Materials')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='study-materials', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Study Materials', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">Course Study Materials & Resources</h4>
+                    <p class="text-secondary small mb-0">Access lecture presentations, notes, lab manuals, and syllabus files shared by your professors.</p>
+                </div>
+            </div>
+
+            <!-- Study Materials Table Card -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark"><i class="bi bi-folder-fill text-primary me-2"></i>Class Materials</div>
+                    <span class="badge bg-light text-muted border" th:text="${materials.size()} + ' Files Available'">0</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Subject & Faculty</th>
+                                <th>Format & Size</th>
+                                <th>Date Published</th>
+                                <th class="text-end">Download</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="m : ${materials}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded bg-light text-primary p-2 d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                                            <i th:if="${m.fileType == 'PDF'}" class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+                                            <i th:if="${m.fileType == 'PPT' or m.fileType == 'PPTX'}" class="bi bi-file-earmark-slides-fill text-warning fs-5"></i>
+                                            <i th:if="${m.fileType == 'DOC' or m.fileType == 'DOCX'}" class="bi bi-file-earmark-word-fill text-primary fs-5"></i>
+                                            <i th:if="${m.fileType != 'PDF' and m.fileType != 'PPT' and m.fileType != 'PPTX' and m.fileType != 'DOC' and m.fileType != 'DOCX'}" class="bi bi-file-earmark-text-fill text-secondary fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark small" th:text="${m.title}">Resource Title</div>
+                                            <div class="text-secondary small d-flex align-items-center gap-1">
+                                                <i class="bi bi-paperclip"></i>
+                                                <span class="text-muted" th:text="${m.fileName}">document.pdf</span>
+                                            </div>
+                                            <small class="text-muted text-truncate d-inline-block" style="max-width: 280px;" th:text="${m.description}">Description</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark small" th:text="${m.subject != null ? m.subject.name : 'N/A'}">Subject</div>
+                                    <small class="text-secondary" th:text="${m.teacher != null ? m.teacher.name : 'Faculty'}">Instructor</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border small" th:text="${m.fileType}">PDF</span>
+                                    <small class="text-muted ms-1" th:text="${m.fileSize}">1.2 MB</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted" th:text="${#temporals.format(m.uploadDate, 'dd MMM yyyy, HH:mm')}">Date</small>
+                                </td>
+                                <td class="text-end">
+                                    <a th:href="@{'/student/study-materials/' + ${m.id} + '/download'}" class="btn btn-sm btn-outline-primary" title="Download Material">
+                                        <i class="bi bi-cloud-arrow-down-fill me-1"></i> Download
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(materials)}">
+                                <td colspan="5" class="text-center text-muted py-4">No study materials published yet for your current class.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

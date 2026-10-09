@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Fees & Payments')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='fees', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='My Fee Ledger & Invoices', student=${student})}"></nav>
+
+        <div class="page-container">
+            <!-- Fee Overview Invoices -->
+            <div class="card-custom">
+                <div class="card-custom-header">
+                    <span class="fw-bold text-dark"><i class="bi bi-wallet2 text-primary me-2"></i>Tuition & College Dues</span>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="printReport()">
+                        <i class="bi bi-printer me-1"></i> Print Statement
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Invoice Item</th>
+                                <th>Semester</th>
+                                <th>Total Fee</th>
+                                <th>Amount Paid</th>
+                                <th>Balance Due</th>
+                                <th>Payment Method</th>
+                                <th>Transaction Ref</th>
+                                <th>Payment Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="f : ${fees}">
+                                <td class="fw-bold text-dark" th:text="${f.title}">Semester 3 Tuition Fee</td>
+                                <td><span class="badge bg-light text-dark border" th:text="'Sem ' + ${f.semester}">Sem 3</span></td>
+                                <td class="fw-bold text-dark" th:text="'$' + ${f.totalAmount}">$45000</td>
+                                <td class="text-success fw-semibold" th:text="'$' + ${f.paidAmount}">$45000</td>
+                                <td class="text-danger fw-semibold" th:text="'$' + ${f.remainingAmount}">$0</td>
+                                <td class="text-secondary small" th:text="${f.paymentMethod != null ? f.paymentMethod : 'N/A'}">Online</td>
+                                <td><code class="small" th:text="${f.transactionId != null ? f.transactionId : '-'}">TXN123456</code></td>
+                                <td class="small text-muted" th:text="${f.paymentDate != null ? f.paymentDate : 'Pending'}">2026-08-10</td>
+                                <td>
+                                    <span th:if="${f.status == 'Paid'}" class="badge-status badge-status-paid">Paid</span>
+                                    <span th:if="${f.status == 'Partial'}" class="badge-status badge-status-partial">Partial</span>
+                                    <span th:if="${f.status == 'Unpaid'}" class="badge-status badge-status-unpaid">Unpaid</span>
+                                </td>
+                                <td class="text-end">
+                                    <a th:if="${f.paidAmount > 0}" th:href="@{/student/fees/{id}/receipt/pdf(id=${f.id})}" target="_blank" class="btn btn-xs btn-outline-primary btn-sm py-1 px-2" title="Download Receipt PDF">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i> Receipt
+                                    </a>
+                                    <span th:if="${f.paidAmount == 0}" class="text-muted small">-</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(fees)}">
+                                <td colspan="10" class="text-center text-muted py-5">
+                                    <i class="bi bi-receipt fs-1 d-block mb-2 text-secondary"></i>
+                                    No fee records found for your account.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-custom bg-light border">
+                <div class="card-custom-body">
+                    <h6 class="fw-bold text-dark"><i class="bi bi-info-circle text-primary me-2"></i>Accounts Clearance Policy</h6>
+                    <p class="text-secondary small mb-0">Fee payments should be cleared before semester exams commence. For billing queries or transaction reconciliation, please contact the campus Accounts & Finance office.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='Security Settings')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='settings', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='Account Security & Settings', student=${student})}"></nav>
+
+        <div class="page-container">
+            <div class="row g-4">
+                <!-- Change Password Form -->
+                <div class="col-lg-7">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-key-fill text-primary me-2"></i>Change Portal Password</span>
+                        </div>
+                        <div class="card-custom-body">
+                            <!-- Feedback messages -->
+                            <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <div th:text="${successMessage}">Password changed successfully!</div>
+                            </div>
+                            <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <div th:text="${errorMessage}">Error message</div>
+                            </div>
+
+                            <form th:action="@{/student/settings/change-password}" th:object="${passwordRequest}" method="post" id="changePasswordForm">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" id="csrfToken"/>
+
+                                <!-- Email verification info banner -->
+                                <div class="p-3 mb-3 rounded-3 bg-light border d-flex align-items-start gap-2">
+                                    <i class="bi bi-shield-check text-primary fs-5 mt-1"></i>
+                                    <div>
+                                        <div class="fw-semibold text-dark small">Two-Step Email Verification Required</div>
+                                        <div class="text-secondary small">
+                                            For security, a 6-digit verification code must be sent to your email
+                                            <strong class="text-dark" th:text="${student.email}">student@college.edu</strong>.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="currentPassword" class="form-label small fw-semibold text-secondary">Current Password <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                        <input type="password" id="currentPassword" th:field="*{currentPassword}" class="form-control" required placeholder="••••••••">
+                                    </div>
+                                </div>
+
+                                <!-- Email Verification Code (OTP) -->
+                                <div class="mb-3">
+                                    <label for="verificationCode" class="form-label small fw-semibold text-secondary">Email Verification Code (OTP) <span class="text-danger">*</span></label>
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope-check"></i></span>
+                                        <input type="text" id="verificationCode" th:field="*{verificationCode}" class="form-control font-monospace text-center fw-bold letter-spacing-1" required placeholder="6-Digit Code" maxlength="10">
+                                        <button type="button" class="btn btn-outline-primary fw-semibold px-3" id="btnSendOtp" onclick="sendOtpCode()">
+                                            <i class="bi bi-send me-1"></i> Send Code to Email
+                                        </button>
+                                    </div>
+                                    <div id="otpStatusMessage" class="small mt-1" style="display: none;"></div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="newPassword" class="form-label small fw-semibold text-secondary">New Password <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-lock"></i></span>
+                                        <input type="password" id="newPassword" th:field="*{newPassword}" class="form-control" required minlength="6" placeholder="At least 6 characters">
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="confirmPassword" class="form-label small fw-semibold text-secondary">Confirm New Password <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-check"></i></span>
+                                        <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control" required minlength="6" placeholder="Repeat new password">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                                    <i class="bi bi-check2-circle me-1"></i> Verify Code & Update Password
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Security Profile -->
+                <div class="col-lg-5">
+                    <div class="card-custom mb-4">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-shield-check text-success me-2"></i>Account Security Status</span>
+                        </div>
+                        <div class="card-custom-body">
+                            <table class="table table-borderless table-sm mb-0">
+                                <tr>
+                                    <td class="text-secondary small">Login Identifier:</td>
+                                    <td class="fw-bold text-dark text-truncate" th:text="${student.user != null ? student.user.username : student.email}">alex@student.edu</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary small">Role:</td>
+                                    <td><span class="badge bg-primary-subtle text-primary">ROLE_STUDENT</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary small">Email Verification:</td>
+                                    <td>
+                                        <span th:if="${student.user != null && student.user.emailVerified}" class="badge bg-success-subtle text-success">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Verified
+                                        </span>
+                                        <span th:unless="${student.user != null && student.user.emailVerified}" class="badge bg-warning-subtle text-warning">
+                                            <i class="bi bi-exclamation-circle-fill me-1"></i> Unverified
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-secondary small">Account Status:</td>
+                                    <td>
+                                        <span class="badge-status badge-status-active">
+                                            <i class="bi bi-check-circle-fill"></i> Active
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card-custom bg-light border">
+                        <div class="card-custom-body">
+                            <h6 class="fw-bold text-dark"><i class="bi bi-info-circle text-primary me-2"></i>Password Guidelines</h6>
+                            <ul class="small text-secondary ps-3 mb-0">
+                                <li>Use at least 6 characters with a combination of letters & digits.</li>
+                                <li>Never share your credentials with anyone.</li>
+                                <li>If you suspect unauthorized access, reset your password immediately.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+
+<script>
+let otpTimer = null;
+
+function sendOtpCode() {
+    const btn = document.getElementById('btnSendOtp');
+    const statusMsg = document.getElementById('otpStatusMessage');
+    const csrfToken = document.getElementById('csrfToken') ? document.getElementById('csrfToken').value : '';
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Sending...';
+    statusMsg.style.display = 'block';
+    statusMsg.className = 'small text-primary mt-1';
+    statusMsg.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Sending verification code to your email...';
+
+    const formData = new FormData();
+    formData.append('_csrf', csrfToken);
+
+    fetch('/student/settings/send-verification-code', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusMsg.className = 'small text-success mt-1 fw-medium';
+            let extra = data.demoCode ? ` (Demo Code: <strong>${data.demoCode}</strong>)` : '';
+            statusMsg.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${data.message} ${extra}`;
+            document.getElementById('verificationCode').focus();
+            startOtpCooldown(60);
+        } else {
+            statusMsg.className = 'small text-danger mt-1';
+            statusMsg.innerHTML = `<i class="bi bi-exclamation-circle-fill me-1"></i> ${data.message}`;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send me-1"></i> Send Code to Email';
+        }
+    })
+    .catch(err => {
+        statusMsg.className = 'small text-danger mt-1';
+        statusMsg.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i> Failed to send code. Please try again.';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-send me-1"></i> Send Code to Email';
+    });
+}
+
+function startOtpCooldown(seconds) {
+    const btn = document.getElementById('btnSendOtp');
+    let remaining = seconds;
+    if (otpTimer) clearInterval(otpTimer);
+
+    otpTimer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(otpTimer);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i> Resend Code';
+        } else {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="bi bi-clock me-1"></i> Resend in ${remaining}s`;
+        }
+    }, 1000);
+}
+</script>
+</body>
+</html>

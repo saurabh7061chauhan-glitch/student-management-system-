@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Faculty Profile')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='profile', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Faculty Profile', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Flash Message -->
+            <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-check-circle-fill"></i>
+                <div th:text="${successMessage}">Success message</div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Left Profile Summary Card -->
+                <div class="col-lg-4">
+                    <div class="card-custom text-center p-4">
+                        <div class="position-relative d-inline-block mx-auto mb-3">
+                            <img th:if="${teacher.profileImage != null}" th:src="${teacher.profileImage}" class="rounded-circle border border-3 border-primary shadow-sm" style="width: 120px; height: 120px; object-fit: cover;" alt="Avatar">
+                            <div th:unless="${teacher.profileImage != null}" class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-1 mx-auto" style="width: 120px; height: 120px;">F</div>
+                        </div>
+
+                        <h4 class="fw-bold text-dark mb-1" th:text="${teacher.name}">Prof. David Miller</h4>
+                        <div class="text-primary fw-semibold mb-2" th:text="${teacher.designation}">Professor & HOD</div>
+                        <span class="badge bg-light text-dark border px-3 py-1 mb-3" th:text="${teacher.teacherId}">TCH101</span>
+
+                        <div class="border-top pt-3 text-start small">
+                            <div class="mb-2 text-muted">
+                                <i class="bi bi-building text-primary me-2"></i>Department:
+                                <strong class="text-dark d-block ms-4" th:text="${teacher.department != null ? teacher.department.name : 'N/A'}">Computer Science</strong>
+                            </div>
+                            <div class="mb-2 text-muted">
+                                <i class="bi bi-mortarboard text-primary me-2"></i>Qualification:
+                                <strong class="text-dark d-block ms-4" th:text="${teacher.qualification}">Ph.D in Computer Science</strong>
+                            </div>
+                            <div class="mb-2 text-muted">
+                                <i class="bi bi-calendar-check text-primary me-2"></i>Joining Date:
+                                <strong class="text-dark d-block ms-4" th:text="${teacher.joiningDate != null ? #temporals.format(teacher.joiningDate, 'MMMM dd, yyyy') : 'N/A'}">July 01, 2019</strong>
+                            </div>
+                            <div class="text-muted">
+                                <i class="bi bi-shield-check text-success me-2"></i>Account Status:
+                                <span class="badge bg-success-subtle text-success ms-1" th:text="${teacher.status}">Active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assigned Subjects Card -->
+                    <div class="card-custom mt-4">
+                        <div class="card-custom-header">
+                            <div class="fw-bold text-dark">
+                                <i class="bi bi-book-half text-primary me-2"></i>Assigned Subjects (<span th:text="${#lists.size(subjects)}">0</span>)
+                            </div>
+                        </div>
+                        <div class="card-custom-body p-3">
+                            <div class="d-flex flex-wrap gap-2" th:if="${not #lists.isEmpty(subjects)}">
+                                <span class="badge bg-light text-dark border p-2 text-start" th:each="s : ${subjects}">
+                                    <strong class="text-primary" th:text="${s.code}">CS301</strong>: <span th:text="${s.name}">Data Structures</span>
+                                </span>
+                            </div>
+                            <div th:if="${#lists.isEmpty(subjects)}" class="text-muted small text-center py-2">
+                                No subjects currently assigned.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Edit Profile Form -->
+                <div class="col-lg-8">
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <div class="fw-bold text-dark">
+                                <i class="bi bi-person-lines-fill text-primary me-2"></i>Profile Information & Preferences
+                            </div>
+                        </div>
+
+                        <div class="card-custom-body p-4">
+                            <!-- Policy Note -->
+                            <div class="alert alert-secondary d-flex align-items-center gap-2 mb-4 py-2 small">
+                                <i class="bi bi-lock-fill text-secondary fs-5"></i>
+                                <div>
+                                    <strong>Locked Official Fields:</strong> Faculty ID, Full Name, Official Email, Department, and Designation are verified institutional records. To amend these details, please submit a request to the Academic Administrator.
+                                </div>
+                            </div>
+
+                            <form th:action="@{/faculty/profile}" method="post">
+                                <div class="row g-3">
+                                    <!-- Read-Only Administrative Fields -->
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">Faculty ID (Read-Only)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                            <input type="text" class="form-control bg-light" th:value="${teacher.teacherId}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">Full Legal Name (Read-Only)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                            <input type="text" class="form-control bg-light" th:value="${teacher.name}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">Official Email (Read-Only)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                            <input type="email" class="form-control bg-light" th:value="${teacher.email}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">Department (Read-Only)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                            <input type="text" class="form-control bg-light" th:value="${teacher.department != null ? teacher.department.name : 'N/A'}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">Designation (Read-Only)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                            <input type="text" class="form-control bg-light" th:value="${teacher.designation}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-muted">Highest Qualification (Read-Only)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
+                                            <input type="text" class="form-control bg-light" th:value="${teacher.qualification}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <!-- Editable Permitted Fields -->
+                                    <div class="col-12"><hr class="my-3"></div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-dark">Contact Phone Number <span class="text-primary">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                            <input type="tel" name="phone" class="form-control" th:value="${teacher.phone}" placeholder="+1-555-0101" required>
+                                        </div>
+                                        <small class="form-text text-muted">You can update your personal contact phone.</small>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold text-dark">Profile Photo URL</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-image"></i></span>
+                                            <input type="text" name="profileImage" class="form-control" th:value="${teacher.profileImage}" placeholder="/images/default-avatar.png">
+                                        </div>
+                                        <small class="form-text text-muted">URL to your avatar image or photo.</small>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 text-end">
+                                    <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                                        <i class="bi bi-save me-1"></i> Save Permitted Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

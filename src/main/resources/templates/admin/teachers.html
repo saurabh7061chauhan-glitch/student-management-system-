@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Faculty Management')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='teachers')}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Faculty & Academic Staff Management')}"></nav>
+
+        <div class="page-container">
+            <!-- Filter & Action Header -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-body">
+                    <form th:action="@{/admin/teachers}" method="get" class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" name="search" class="form-control" placeholder="Search faculty name, ID, or subject..." th:value="${currentSearch}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <select name="deptId" class="form-select">
+                                <option value="">All Departments</option>
+                                <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}" th:selected="${currentDeptId == d.id}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary w-50"><i class="bi bi-funnel me-1"></i> Filter</button>
+                            <a th:href="@{/admin/teachers}" class="btn btn-outline-secondary w-50"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Teachers Table -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <div class="fw-bold text-dark">
+                        <i class="bi bi-person-video3 text-primary me-2"></i>Faculty Members (<span th:text="${#lists.size(teachers)}">0</span>)
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm shadow-sm" data-bs-toggle="modal" data-bs-target="#addTeacherModal">
+                        <i class="bi bi-person-plus-fill me-1"></i> Add Faculty Member
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Faculty Member</th>
+                                <th>Faculty ID</th>
+                                <th>Department & Role</th>
+                                <th>Specialization</th>
+                                <th>Qualification</th>
+                                <th>Account Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="t : ${teachers}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img th:if="${t.profileImage != null}" th:src="${t.profileImage}" class="rounded-circle border" style="width: 38px; height: 38px; object-fit: cover;" alt="Avatar">
+                                        <div th:unless="${t.profileImage != null}" class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px;">F</div>
+                                        <div>
+                                            <div class="fw-bold text-dark" th:text="${t.name}">Teacher Name</div>
+                                            <small class="text-muted d-block" th:text="${t.email}">Email</small>
+                                            <small class="text-secondary" th:text="${t.phone}">Phone</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border fw-bold" th:text="${t.teacherId}">ID</span></td>
+                                <td>
+                                    <div class="fw-medium text-dark" th:text="${t.department != null ? t.department.name : 'N/A'}">Department</div>
+                                    <small class="badge bg-secondary-subtle text-secondary" th:text="${t.designation}">Designation</small>
+                                </td>
+                                <td th:text="${t.subject}">Subject</td>
+                                <td class="small text-muted" th:text="${t.qualification}">Ph.D</td>
+                                <td>
+                                    <span class="badge-status" 
+                                          th:classappend="${t.status == 'Active' ? 'badge-status-active' : (t.status == 'Pending Verification' ? 'badge-status-pending' : 'badge-status-disabled')}">
+                                        <i class="bi" th:classappend="${t.status == 'Active' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'}"></i>
+                                        <span th:text="${t.status}">Active</span>
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            Status
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li>
+                                                <button class="dropdown-item text-success" th:onclick="'updateStatus(' + ${t.id} + ', \'Active\')'">
+                                                    <i class="bi bi-check-circle me-1"></i> Activate
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item text-warning" th:onclick="'updateStatus(' + ${t.id} + ', \'Suspended\')'">
+                                                    <i class="bi bi-pause-circle me-1"></i> Suspend
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" th:onclick="'updateStatus(' + ${t.id} + ', \'Disabled\')'">
+                                                    <i class="bi bi-slash-circle me-1"></i> Disable
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-primary" th:onclick="'resendVerification(' + ${t.id} + ')'">
+                                                    <i class="bi bi-envelope-check me-1"></i> Resend Verification
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger ms-1" th:data-url="@{'/api/admin/teachers/' + ${t.id}}" data-type="Faculty Member" onclick="deleteEntity(this.getAttribute('data-url'), this.getAttribute('data-type'))">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(teachers)}">
+                                <td colspan="7" class="text-center text-muted py-5">No faculty members found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Faculty Member Modal -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill text-primary me-2"></i>Add New Faculty Member</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="createTeacherForm" onsubmit="handleCreateTeacher(event)">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Faculty ID <span class="text-danger">*</span></label>
+                            <input type="text" id="tchId" class="form-control" placeholder="e.g. FAC105 or TCH105" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Full Legal Name <span class="text-danger">*</span></label>
+                            <input type="text" id="tchName" class="form-control" placeholder="e.g. Prof. Alan Turing" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Institutional Email <span class="text-danger">*</span></label>
+                            <input type="email" id="tchEmail" class="form-control" placeholder="e.g. alan.turing@college.edu" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                            <input type="tel" id="tchPhone" class="form-control" placeholder="+1-555-0155" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Department <span class="text-danger">*</span></label>
+                            <select id="tchDept" class="form-select" required>
+                                <option value="">Select Department</option>
+                                <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Designation <span class="text-danger">*</span></label>
+                            <select id="tchDesignation" class="form-select" required>
+                                <option value="Professor">Professor</option>
+                                <option value="Associate Professor">Associate Professor</option>
+                                <option value="Assistant Professor" selected>Assistant Professor</option>
+                                <option value="Lecturer">Lecturer</option>
+                                <option value="Head of Department">Head of Department (HOD)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Specialization / Subject Area <span class="text-danger">*</span></label>
+                            <input type="text" id="tchSubject" class="form-control" placeholder="e.g. Artificial Intelligence" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Highest Qualification</label>
+                            <input type="text" id="tchQual" class="form-control" placeholder="e.g. Ph.D in Computer Science">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Joining Date</label>
+                            <input type="date" id="tchJoiningDate" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Profile Photo URL</label>
+                            <input type="text" id="tchProfileImage" class="form-control" placeholder="/images/default-avatar.png">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold">Initial Password (Optional)</label>
+                            <input type="password" id="tchPassword" class="form-control" placeholder="Default: Faculty@123">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-semibold">Assign Subjects</label>
+                            <select id="tchAssignedSubjects" class="form-select" multiple size="4">
+                                <option th:each="sb : ${allSubjects}" th:value="${sb.id}" th:text="${sb.code + ' - ' + sb.name + ' (' + (sb.course != null ? sb.course.code : '') + ' Sem ' + sb.semester + ')'}"></option>
+                            </select>
+                            <small class="form-text text-muted">Hold Ctrl / Cmd to select multiple subjects.</small>
+                        </div>
+
+                        <!-- Auto-Verify Checkbox -->
+                        <div class="col-md-12">
+                            <div class="form-check p-3 bg-light rounded-3 border">
+                                <input class="form-check-input" type="checkbox" id="tchAutoVerify" value="true">
+                                <label class="form-check-label fw-semibold small text-dark" for="tchAutoVerify">
+                                    Auto-verify and activate immediately
+                                </label>
+                                <small class="form-text text-muted d-block">
+                                    If unchecked, account status will be set to <strong>Pending Verification</strong> and a secure email verification link will be dispatched to the faculty member.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer px-0 pb-0 mt-4">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary fw-semibold"><i class="bi bi-save me-1"></i> Create Faculty Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+
+<script>
+async function handleCreateTeacher(e) {
+    e.preventDefault();
+    const subjectSelect = document.getElementById('tchAssignedSubjects');
+    const selectedSubjects = Array.from(subjectSelect.selectedOptions).map(opt => parseInt(opt.value));
+
+    const payload = {
+        teacherId: document.getElementById('tchId').value,
+        name: document.getElementById('tchName').value,
+        email: document.getElementById('tchEmail').value,
+        phone: document.getElementById('tchPhone').value,
+        departmentId: parseInt(document.getElementById('tchDept').value),
+        designation: document.getElementById('tchDesignation').value,
+        subject: document.getElementById('tchSubject').value,
+        qualification: document.getElementById('tchQual').value,
+        joiningDate: document.getElementById('tchJoiningDate').value || null,
+        profileImage: document.getElementById('tchProfileImage').value || '/images/default-avatar.png',
+        password: document.getElementById('tchPassword').value || 'Faculty@123',
+        autoVerify: document.getElementById('tchAutoVerify').checked,
+        assignedSubjectIds: selectedSubjects
+    };
+
+    try {
+        const response = await fetch('/api/admin/teachers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        if (response.ok) {
+            showToast('Faculty member registered successfully!');
+            setTimeout(() => window.location.reload(), 700);
+        } else {
+            showToast(res.message || 'Failed to register faculty', true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+
+async function updateStatus(id, newStatus) {
+    if (!confirm(`Are you sure you want to change faculty status to ${newStatus}?`)) return;
+    try {
+        const response = await fetch(`/api/admin/teachers/${id}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const res = await response.json();
+        if (response.ok) {
+            showToast(`Status updated to ${newStatus}`);
+            setTimeout(() => window.location.reload(), 600);
+        } else {
+            showToast(res.message || 'Failed to update status', true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+
+async function resendVerification(id) {
+    try {
+        const response = await fetch(`/api/admin/teachers/${id}/resend-verification`, {
+            method: 'POST'
+        });
+        const res = await response.json();
+        if (response.ok) {
+            showToast('Verification email resent successfully!');
+        } else {
+            showToast(res.message || 'Failed to resend verification', true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+</script>
+</body>
+</html>

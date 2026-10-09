@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Library Resources')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='library', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Faculty Library Portal', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">University Library & Academic References</h4>
+                    <p class="text-secondary small mb-0">Search academic volumes, textbook monographs, check live rack availability, and track your borrowed titles.</p>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="card-custom mb-4 p-3">
+                <form th:action="@{/faculty/library}" method="get" class="row g-2 align-items-center m-0">
+                    <div class="col-md-10">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" name="search" class="form-control border-start-0"
+                                   placeholder="Search by book title, author, category, or ISBN..." th:value="${searchQuery}">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Search Catalog</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- My Borrowed Books Section -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-header">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-bookmark-check-fill me-2 text-primary"></i> My Active & Past Book Loans (<span th:text="${#lists.size(myIssues)}">0</span>)
+                    </h6>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Book Title</th>
+                                <th>ISBN</th>
+                                <th>Issue Date</th>
+                                <th>Due Date</th>
+                                <th>Return Date</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(myIssues)}">
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-journal-x fs-3 d-block mb-1"></i>
+                                    You have no active or historical book loans registered in your name.
+                                </td>
+                            </tr>
+                            <tr th:each="iss : ${myIssues}">
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${iss.book.title}">Title</div>
+                                    <small class="text-muted" th:text="${iss.book.author}">Author</small>
+                                </td>
+                                <td><code class="text-dark" th:text="${iss.book.isbn}">ISBN</code></td>
+                                <td><span th:text="${iss.issueDate}">2026-04-01</span></td>
+                                <td>
+                                    <strong th:classappend="${iss.status == 'OVERDUE' ? 'text-danger' : 'text-dark'}" th:text="${iss.dueDate}">2026-05-01</strong>
+                                </td>
+                                <td>
+                                    <span th:if="${iss.returnDate != null}" th:text="${iss.returnDate}">2026-04-20</span>
+                                    <span th:unless="${iss.returnDate != null}" class="text-muted fst-italic">Currently Checked Out</span>
+                                </td>
+                                <td>
+                                    <span th:if="${iss.status == 'RETURNED'}" class="badge bg-success-subtle text-success border border-success-subtle">Returned</span>
+                                    <span th:if="${iss.status == 'OVERDUE'}" class="badge bg-danger text-white">Overdue</span>
+                                    <span th:if="${iss.status == 'ISSUED'}" class="badge bg-primary-subtle text-primary border border-primary-subtle">Active Loan</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- University Book Catalog Grid -->
+            <h6 class="fw-bold text-dark mb-3">
+                <i class="bi bi-book-half me-2 text-primary"></i> Library Catalog Inventory
+            </h6>
+            <div class="row g-3">
+                <div th:if="${#lists.isEmpty(books)}" class="col-12">
+                    <div class="card-custom p-4 text-center text-muted">
+                        No books matching your query found in library catalog.
+                    </div>
+                </div>
+                <div th:each="b : ${books}" class="col-md-4">
+                    <div class="card-custom h-100">
+                        <div class="card-custom-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-light text-dark border" th:text="${b.category}">Computer Science</span>
+                                <span th:if="${b.availableCopies > 0}" class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <span th:text="${b.availableCopies}">3</span> Available
+                                </span>
+                                <span th:unless="${b.availableCopies > 0}" class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                    Out of Stock
+                                </span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1" th:text="${b.title}">Book Title</h6>
+                            <small class="text-muted d-block mb-2" th:text="'By ' + ${b.author}">Author</small>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top small text-muted">
+                                <span><i class="bi bi-geo-alt me-1 text-primary"></i><span th:text="${b.shelfLocation}">Rack 4B</span></span>
+                                <span><code class="text-dark" th:text="${b.isbn}">ISBN</code></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

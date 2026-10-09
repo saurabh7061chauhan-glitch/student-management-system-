@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Enter Examination Marks')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='exams', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Marks Submission', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <a th:href="@{/faculty/exams}" class="btn btn-outline-secondary btn-sm mb-2">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Exams
+                    </a>
+                    <h4 class="fw-bold mb-1 text-dark">
+                        Marks Entry: <span th:text="${schedule.subject.name}">Subject Name</span>
+                    </h4>
+                    <p class="text-secondary small mb-0">
+                        Exam: <strong th:text="${schedule.examination.name}">Exam</strong> |
+                        Date: <span th:text="${schedule.examDate}">2026-04-12</span> |
+                        Max Marks: <strong th:text="${schedule.maxMarks}">100</strong> |
+                        Pass Threshold: <span th:text="${schedule.passMarks}">40</span>
+                    </p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span th:if="${schedule.finalized}" class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fw-semibold">
+                        <i class="bi bi-lock-fill me-1"></i> MARKS FINALIZED & LOCKED
+                    </span>
+                    <span th:unless="${schedule.finalized}" class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 fw-semibold">
+                        <i class="bi bi-pencil-square me-1"></i> DRAFT / EDITABLE
+                    </span>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Enrolled Students Marks Table -->
+            <div class="card-custom">
+                <div class="card-custom-header d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-people-fill me-2 text-primary"></i> Candidate Roster & Scores (<span th:text="${#lists.size(students)}">0</span> Students)
+                    </h6>
+                </div>
+                <div class="card-custom-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Student Name</th>
+                                <th>Department / Section</th>
+                                <th style="width: 140px;">Marks Obtained</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                                <th style="width: 200px;">Remarks</th>
+                                <th class="text-end" th:if="${!schedule.finalized}">Save Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${#lists.isEmpty(students)}">
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-people fs-3 d-block mb-1"></i>
+                                    No students enrolled in this course semester yet.
+                                </td>
+                            </tr>
+                            <tr th:each="st : ${students}" th:with="res=${resultMap[st.id]}">
+                                <td>
+                                    <span class="badge bg-light text-dark border font-monospace" th:text="${st.studentId}">STU2025001</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark" th:text="${st.fullName}">Alex Morgan</div>
+                                    <small class="text-muted" th:text="${st.email}">alex@student.edu</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted" th:text="${st.course != null ? st.course.courseName : 'CS'}">B.Tech</small>
+                                    <div class="small fw-semibold" th:text="${st.section != null ? st.section.name : 'Section A'}">Section A</div>
+                                </td>
+
+                                <td th:if="${schedule.finalized}">
+                                    <strong class="fs-6 text-primary" th:text="${res != null ? res.marksObtained : '0'}">85</strong>
+                                    <small class="text-muted">/ <span th:text="${schedule.maxMarks}">100</span></small>
+                                </td>
+                                <td th:if="${schedule.finalized}">
+                                    <span class="badge bg-primary" th:text="${res != null ? res.grade : 'N/A'}">A</span>
+                                </td>
+                                <td th:if="${schedule.finalized}">
+                                    <span class="badge" th:classappend="${res != null && res.status == 'Pass' ? 'bg-success' : 'bg-danger'}" th:text="${res != null ? res.status : 'Pending'}">Pass</span>
+                                </td>
+                                <td th:if="${schedule.finalized}">
+                                    <small class="text-muted" th:text="${res != null ? res.remarks : '-'}">-</small>
+                                </td>
+
+                                <!-- Form row for draft mode -->
+                                <td colspan="5" th:if="${!schedule.finalized}" class="p-0">
+                                    <form th:action="@{/faculty/exams/{scheduleId}/marks(scheduleId=${schedule.id})}" method="post" class="m-0">
+                                        <input type="hidden" name="studentId" th:value="${st.id}">
+                                        <div class="d-flex align-items-center gap-2 p-2">
+                                            <div style="width: 130px;">
+                                                <input type="number" step="0.5" min="0" th:max="${schedule.maxMarks}" name="marksObtained"
+                                                       class="form-control form-control-sm text-center fw-bold"
+                                                       th:value="${res != null ? res.marksObtained : 0.0}" required>
+                                            </div>
+                                            <div style="width: 60px;" class="text-center">
+                                                <span class="badge bg-secondary" th:text="${res != null ? res.grade : '-'}">-</span>
+                                            </div>
+                                            <div style="width: 70px;" class="text-center">
+                                                <span class="badge" th:classappend="${res != null && res.status == 'Pass' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}"
+                                                      th:text="${res != null ? res.status : 'Pending'}">Status</span>
+                                            </div>
+                                            <div class="flex-fill">
+                                                <input type="text" name="remarks" class="form-control form-control-sm"
+                                                       placeholder="Remarks / Absent" th:value="${res != null ? res.remarks : ''}">
+                                            </div>
+                                            <div class="d-flex gap-1">
+                                                <button type="submit" name="finalize" value="false" class="btn btn-sm btn-outline-primary" title="Save Draft">
+                                                    <i class="bi bi-save me-1"></i> Save
+                                                </button>
+                                                <button type="submit" name="finalize" value="true" class="btn btn-sm btn-success" title="Finalize Schedule"
+                                                        onclick="return confirm('Finalizing marks will lock modifications unless unlocked by an Admin. Continue?');">
+                                                    <i class="bi bi-check-all me-1"></i> Finalize
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+</body>
+</html>

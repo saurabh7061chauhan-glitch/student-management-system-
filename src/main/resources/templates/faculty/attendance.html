@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/faculty-layout :: head(title='Mark Attendance')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/faculty-layout :: sidebar(activeMenu='attendance', teacher=${teacher})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/faculty-layout :: topbar(pageTitle='Attendance Management', teacher=${teacher})}"></nav>
+
+        <div class="page-container">
+            <!-- Flash Messages -->
+            <div th:if="${successMessage}" class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-check-circle-fill"></i>
+                <div th:text="${successMessage}">Success message</div>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div th:text="${errorMessage}">Error message</div>
+            </div>
+
+            <!-- Active QR Session Banner if running -->
+            <div th:if="${activeQrSession != null}" class="alert alert-info border-info d-flex flex-wrap align-items-center justify-content-between p-3 mb-4 shadow-sm bg-white">
+                <div class="d-flex align-items-center gap-3">
+                    <img th:src="${@qrCodeService.generateQrCodeBase64('QR-ATT:' + activeQrSession.sessionToken, 140, 140)}" class="rounded shadow-sm bg-white p-1 border" style="width: 90px; height: 90px;" alt="QR Code">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-danger animate-pulse"><i class="bi bi-broadcast me-1"></i> LIVE QR ATTENDANCE</span>
+                            <span class="badge bg-light text-dark border small" th:text="${activeQrSession.subject.code}">CS101</span>
+                        </div>
+                        <h6 class="fw-bold mb-1 text-dark" th:text="${activeQrSession.subject.name}">Subject</h6>
+                        <div class="small text-secondary">
+                            Section: <strong th:text="${activeQrSession.section != null ? activeQrSession.section.displayName : 'All Sections'}">All</strong> &bull;
+                            Expires at: <span class="fw-bold text-danger font-monospace" th:text="${#temporals.format(activeQrSession.expiresAt, 'HH:mm:ss')}">Time</span>
+                        </div>
+                        <small class="text-muted">Students can scan this from their portal to mark verified presence.</small>
+                    </div>
+                </div>
+                <form th:action="@{/faculty/attendance/qr/stop}" method="post" class="mt-2 mt-md-0">
+                    <input type="hidden" name="sessionId" th:value="${activeQrSession.id}">
+                    <input type="hidden" name="subjectId" th:value="${selectedSubject != null ? selectedSubject.id : ''}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-stop-circle me-1"></i> Terminate QR Session
+                    </button>
+                </form>
+            </div>
+
+            <!-- Subject & Date & Section Selector Form -->
+            <div class="card-custom mb-4">
+                <div class="card-custom-body p-3">
+                    <form th:action="@{/faculty/attendance}" method="get" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-secondary">Subject <span class="text-danger">*</span></label>
+                            <select name="subjectId" class="form-select" onchange="this.form.submit()">
+                                <option value="" th:if="${#lists.isEmpty(subjects)}">No subjects assigned</option>
+                                <option th:each="s : ${subjects}" 
+                                        th:value="${s.id}" 
+                                        th:text="${s.code + ' - ' + s.name + ' (' + (s.course != null ? s.course.code : '') + ' Sem ' + s.semester + ')'}" 
+                                        th:selected="${selectedSubject != null && selectedSubject.id == s.id}">
+                                    CS301 - Data Structures
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-secondary">Section / Class</label>
+                            <select name="sectionId" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Sections</option>
+                                <option th:each="sec : ${sections}" 
+                                        th:value="${sec.id}" 
+                                        th:text="${sec.displayName}" 
+                                        th:selected="${selectedSectionId != null && selectedSectionId == sec.id}">
+                                    Section A
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold text-secondary">Date <span class="text-danger">*</span></label>
+                            <input type="date" name="date" class="form-control" th:value="${attendanceDate}" onchange="this.form.submit()">
+                        </div>
+
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-arrow-repeat me-1"></i> Refresh
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Attendance Marking Card -->
+            <div class="row g-4" th:if="${selectedSubject != null}">
+                <div class="col-lg-8">
+                    <div class="card-custom">
+                        <div class="card-custom-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <div class="fw-bold text-dark">
+                                    <i class="bi bi-person-check-fill text-primary me-2"></i>Class Roll Call: 
+                                    <span th:text="${selectedSubject.name}">Data Structures</span>
+                                </div>
+                                <small class="text-muted">
+                                    <span th:text="${selectedSubject.course != null ? selectedSubject.course.name : ''}">B.Tech</span> &bull; 
+                                    Semester <span th:text="${selectedSubject.semester}">3</span> &bull; 
+                                    Date: <strong class="text-dark" th:text="${#temporals.format(attendanceDate, 'EEE, MMM dd, yyyy')}">Oct 08, 2026</strong>
+                                </small>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#qrAttendanceModal">
+                                    <i class="bi bi-qr-code-scan me-1"></i> Start QR Session
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="markAll('Present')">
+                                    <i class="bi bi-check-all me-1"></i> All Present
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="markAll('Absent')">
+                                    <i class="bi bi-x-lg me-1"></i> All Absent
+                                </button>
+                            </div>
+                        </div>
+
+                        <form th:action="@{/faculty/attendance/save}" method="post">
+                            <input type="hidden" name="subjectId" th:value="${selectedSubject.id}">
+                            <input type="hidden" name="date" th:value="${attendanceDate}">
+
+                            <div class="table-responsive">
+                                <table class="table table-custom mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Roll No</th>
+                                            <th>Student Name</th>
+                                            <th>Status</th>
+                                            <th>Remarks (Optional)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="st : ${enrolledStudents}">
+                                            <td>
+                                                <span class="badge bg-light text-dark border fw-bold" th:text="${st.studentId}">STU1001</span>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold text-dark" th:text="${st.fullName}">Alex Morgan</div>
+                                                <small class="text-muted" th:text="${st.email}">alex@student.edu</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <input type="radio" class="btn-check" 
+                                                           th:name="${'status_' + st.id}" 
+                                                           th:id="${'present_' + st.id}" 
+                                                           value="Present" 
+                                                           th:checked="${attendanceStatusMap[st.id] == null or attendanceStatusMap[st.id] == 'Present'}">
+                                                    <label class="btn btn-outline-success px-2" th:for="${'present_' + st.id}">Present</label>
+
+                                                    <input type="radio" class="btn-check" 
+                                                           th:name="${'status_' + st.id}" 
+                                                           th:id="${'absent_' + st.id}" 
+                                                           value="Absent" 
+                                                           th:checked="${attendanceStatusMap[st.id] == 'Absent'}">
+                                                    <label class="btn btn-outline-danger px-2" th:for="${'absent_' + st.id}">Absent</label>
+
+                                                    <input type="radio" class="btn-check" 
+                                                           th:name="${'status_' + st.id}" 
+                                                           th:id="${'late_' + st.id}" 
+                                                           value="Late" 
+                                                           th:checked="${attendanceStatusMap[st.id] == 'Late'}">
+                                                    <label class="btn btn-outline-warning px-2" th:for="${'late_' + st.id}">Late</label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="text" th:name="${'remarks_' + st.id}" 
+                                                       class="form-control form-control-sm" 
+                                                       placeholder="e.g. Late, Lab session" 
+                                                       th:value="${remarksMap[st.id]}">
+                                            </td>
+                                        </tr>
+                                        <tr th:if="${#lists.isEmpty(enrolledStudents)}">
+                                            <td colspan="4" class="text-center text-muted py-5">
+                                                <i class="bi bi-people fs-2 text-muted d-block mb-2"></i>
+                                                No students currently enrolled in this program and semester.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="card-custom-footer p-3 bg-light text-end" th:if="${not #lists.isEmpty(enrolledStudents)}">
+                                <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                                    <i class="bi bi-save me-1"></i> Save Attendance Record
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Side Summary & History -->
+                <div class="col-lg-4">
+                    <!-- Faculty Attendance Stats -->
+                    <div class="card-custom mb-4">
+                        <div class="card-custom-header">
+                            <div class="fw-bold text-dark">
+                                <i class="bi bi-bar-chart-fill text-warning me-2"></i>Attendance Overview
+                            </div>
+                        </div>
+                        <div class="card-custom-body p-3">
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted">Total Logs</span>
+                                <span class="fw-bold" th:text="${stats.totalClassesMarked}">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted">Present Marked</span>
+                                <span class="fw-bold text-success" th:text="${stats.totalPresent}">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted">Absent Marked</span>
+                                <span class="fw-bold text-danger" th:text="${stats.totalAbsent}">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Class Turnout Rate</span>
+                                <span class="fw-bold text-primary" th:text="${stats.averageAttendanceRate + '%'}">100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance History -->
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <div class="fw-bold text-dark">
+                                <i class="bi bi-clock-history text-primary me-2"></i>Recent Attendance Logs
+                            </div>
+                        </div>
+                        <div class="card-custom-body p-0" style="max-height: 420px; overflow-y: auto;">
+                            <div class="list-group list-group-flush">
+                                <div th:each="h : ${attendanceHistory}" class="list-group-item p-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-dark" th:text="${h.student != null ? h.student.fullName : 'Student'}">Alex Morgan</span>
+                                        <span class="badge" th:classappend="${h.status == 'Present' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}" th:text="${h.status}">Present</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between small text-muted">
+                                        <span th:text="${h.subject != null ? h.subject.code : ''}">CS301</span>
+                                        <span th:text="${#temporals.format(h.date, 'MMM dd, yyyy')}">Oct 08, 2026</span>
+                                    </div>
+                                    <small class="text-muted d-block mt-1 fst-italic" th:if="${h.remarks != null and !h.remarks.isEmpty()}" th:text="${'Note: ' + h.remarks}">Note</small>
+                                </div>
+                                <div th:if="${#lists.isEmpty(attendanceHistory)}" class="p-4 text-center text-muted small">
+                                    No prior logs found for this subject.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State if no subjects assigned -->
+            <div class="card-custom p-5 text-center text-muted" th:if="${selectedSubject == null}">
+                <i class="bi bi-journal-x fs-1 text-muted mb-2 d-block"></i>
+                <h5>No Subject Available</h5>
+                <p class="small text-muted mb-0">You do not have any subjects assigned to take attendance.</p>
+            </div>
+        </div>
+<!-- Modal: Start QR Attendance -->
+<div class="modal fade" id="qrAttendanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/faculty/attendance/qr/start}" method="post">
+                <input type="hidden" name="subjectId" th:value="${selectedSubject != null ? selectedSubject.id : ''}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-qr-code-scan text-primary me-2"></i>Launch QR Attendance</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Generates a secure, temporary QR code with anti-replay protection. Only enrolled students in this class/section can scan within the expiry window.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Class / Section</label>
+                        <select name="sectionId" class="form-select">
+                            <option value="">All Enrolled Sections</option>
+                            <option th:each="sec : ${sections}" th:value="${sec.id}" th:text="${sec.displayName}" th:selected="${selectedSectionId != null && selectedSectionId == sec.id}">Sec A</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Session Active Duration</label>
+                        <select name="validMinutes" class="form-select">
+                            <option value="5">5 Minutes</option>
+                            <option value="10" selected>10 Minutes</option>
+                            <option value="15">15 Minutes</option>
+                            <option value="30">30 Minutes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-broadcast me-1"></i> Start QR Session</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/faculty-layout :: scripts}"></div>
+
+<script>
+function markAll(status) {
+    const radioButtons = document.querySelectorAll(`input[type="radio"][value="${status}"]`);
+    radioButtons.forEach(radio => {
+        radio.checked = true;
+    });
+}
+</script>
+</body>
+</html>

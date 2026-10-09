@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/admin-layout :: head(title='Library Management')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/admin-layout :: sidebar(activeMenu='library')}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/admin-layout :: topbar(pageTitle='Library Management')}"></nav>
+
+        <div class="page-container">
+            <!-- Header Bar -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1 text-dark">University Library & Circulation Desk</h4>
+                    <p class="text-secondary small mb-0">Manage catalog inventory, book lending, returns, student/faculty borrowing, and overdue fines.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#issueBookModal">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Issue Book
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBookModal">
+                        <i class="bi bi-plus-circle me-1"></i> Add Book to Catalog
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${successMessage}">Success</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${errorMessage}">Error</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <!-- Nav Tabs -->
+            <ul class="nav nav-pills mb-4 gap-2" id="libraryTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active rounded-pill px-4" id="catalog-tab" data-bs-toggle="tab" data-bs-target="#catalog" type="button">
+                        <i class="bi bi-journal-bookmark me-1"></i> Catalog Inventory (<span th:text="${#lists.size(books)}">0</span>)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill px-4" id="circulation-tab" data-bs-toggle="tab" data-bs-target="#circulation" type="button">
+                        <i class="bi bi-arrow-left-right me-1"></i> Issued Loans & Circulation (<span th:text="${#lists.size(issues)}">0</span>)
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="libraryTabsContent">
+                <!-- Tab 1: Catalog Inventory -->
+                <div class="tab-pane fade show active" id="catalog">
+                    <!-- Search Bar -->
+                    <div class="card-custom mb-4 p-3">
+                        <form th:action="@{/admin/library}" method="get" class="row g-2 align-items-center m-0">
+                            <div class="col-md-10">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                                    <input type="text" name="search" class="form-control border-start-0"
+                                           placeholder="Search catalog by title, author, category, or ISBN..." th:value="${searchQuery}">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Search Books</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card-custom">
+                        <div class="card-custom-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Book Title & Details</th>
+                                        <th>Author</th>
+                                        <th>Category</th>
+                                        <th>ISBN</th>
+                                        <th>Shelf Location</th>
+                                        <th>Stock / Copies</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:if="${#lists.isEmpty(books)}">
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            <i class="bi bi-book fs-3 d-block mb-1"></i>
+                                            No books found in the catalog matching your search criteria.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="b : ${books}">
+                                        <td>
+                                            <div class="fw-bold text-dark" th:text="${b.title}">Introduction to Algorithms</div>
+                                            <small class="text-muted" th:text="${b.publisher != null ? b.publisher : 'University Press'}">MIT Press</small>
+                                        </td>
+                                        <td th:text="${b.author}">Cormen, Leiserson, Rivest</td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border" th:text="${b.category}">Computer Science</span>
+                                        </td>
+                                        <td><code class="text-dark" th:text="${b.isbn}">978-0262033848</code></td>
+                                        <td>
+                                            <span class="badge bg-secondary-subtle text-secondary" th:text="${b.shelfLocation}">Rack 4B</span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold" th:classappend="${b.availableCopies > 0 ? 'text-success' : 'text-danger'}"
+                                                  th:text="${b.availableCopies}">3</span>
+                                            <span class="text-muted">/ <span th:text="${b.totalCopies}">5</span></span>
+                                        </td>
+                                        <td>
+                                            <span th:if="${b.availableCopies > 0}" class="badge bg-success-subtle text-success border border-success-subtle">Available</span>
+                                            <span th:unless="${b.availableCopies > 0}" class="badge bg-danger-subtle text-danger border border-danger-subtle">Out of Stock</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <form th:action="@{/admin/library/books/{id}/delete(id=${b.id})}" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to remove this book from catalog?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Book">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Circulation & Loans -->
+                <div class="tab-pane fade" id="circulation">
+                    <div class="card-custom">
+                        <div class="card-custom-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>Book</th>
+                                        <th>Borrower</th>
+                                        <th>Issue Date</th>
+                                        <th>Due Date</th>
+                                        <th>Return Date</th>
+                                        <th>Fine ($1/day)</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Circulation Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:if="${#lists.isEmpty(issues)}">
+                                        <td colspan="8" class="text-center py-4 text-muted">
+                                            <i class="bi bi-check2-circle fs-3 d-block mb-1"></i>
+                                            No active loans recorded in circulation history.
+                                        </td>
+                                    </tr>
+                                    <tr th:each="iss : ${issues}">
+                                        <td>
+                                            <div class="fw-bold text-dark" th:text="${iss.book.title}">Book Title</div>
+                                            <small class="text-muted" th:text="${iss.book.isbn}">ISBN</small>
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold text-dark" th:text="${iss.borrowerName}">Alex Morgan</div>
+                                            <small class="badge bg-light text-secondary border" th:text="${iss.borrowerIdentifier}">STU2025001</small>
+                                            <small class="badge" th:classappend="${iss.borrowerType == 'STUDENT' ? 'bg-primary-subtle text-primary' : 'bg-info-subtle text-info'}" th:text="${iss.borrowerType}">STUDENT</small>
+                                        </td>
+                                        <td><span th:text="${iss.issueDate}">2026-04-01</span></td>
+                                        <td>
+                                            <strong th:classappend="${iss.status == 'OVERDUE' ? 'text-danger' : 'text-dark'}" th:text="${iss.dueDate}">2026-04-15</strong>
+                                        </td>
+                                        <td>
+                                            <span th:if="${iss.returnDate != null}" th:text="${iss.returnDate}">2026-04-14</span>
+                                            <span th:unless="${iss.returnDate != null}" class="text-muted fst-italic">Pending Return</span>
+                                        </td>
+                                        <td>
+                                            <div th:if="${iss.fineAmount > 0}">
+                                                <strong class="text-danger" th:text="'$' + ${iss.fineAmount}">$5.00</strong>
+                                                <span th:if="${iss.finePaid}" class="badge bg-success-subtle text-success">Paid</span>
+                                                <span th:unless="${iss.finePaid}" class="badge bg-danger-subtle text-danger">Unpaid</span>
+                                            </div>
+                                            <div th:unless="${iss.fineAmount > 0}" class="text-muted small">$0.00</div>
+                                        </td>
+                                        <td>
+                                            <span th:if="${iss.status == 'RETURNED'}" class="badge bg-success-subtle text-success border border-success-subtle">RETURNED</span>
+                                            <span th:if="${iss.status == 'OVERDUE'}" class="badge bg-danger text-white">OVERDUE</span>
+                                            <span th:if="${iss.status == 'ISSUED'}" class="badge bg-primary-subtle text-primary border border-primary-subtle">ISSUED</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="d-flex justify-content-end gap-1">
+                                                <form th:if="${iss.status != 'RETURNED'}" th:action="@{/admin/library/issues/{id}/return(id=${iss.id})}" method="post" class="m-0">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Return Book"
+                                                            onclick="return confirm('Confirm returning this book to catalog stock?');">
+                                                        <i class="bi bi-arrow-return-left me-1"></i> Return
+                                                    </button>
+                                                </form>
+                                                <form th:if="${iss.fineAmount > 0 && !iss.finePaid}" th:action="@{/admin/library/issues/{id}/pay-fine(id=${iss.id})}" method="post" class="m-0">
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Pay Fine">
+                                                        <i class="bi bi-cash-coin me-1"></i> Pay Fine
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Book -->
+<div class="modal fade" id="addBookModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/admin/library/books/add}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Book to Library Catalog</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">ISBN Identifier</label>
+                        <input type="text" name="isbn" class="form-control" placeholder="e.g. 978-0134685991" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Book Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="Full title of the book" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Author(s)</label>
+                            <input type="text" name="author" class="form-control" placeholder="Author name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Publisher</label>
+                            <input type="text" name="publisher" class="form-control" placeholder="Publisher name">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Category</label>
+                            <input type="text" name="category" class="form-control" value="Computer Science" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Shelf Location</label>
+                            <input type="text" name="shelfLocation" class="form-control" value="Aisle 2, Shelf B" required>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Total Copies</label>
+                            <input type="number" name="totalCopies" class="form-control" value="5" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Edition</label>
+                            <input type="text" name="edition" class="form-control" placeholder="3rd Edition">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Description / Synopsis</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Brief summary of topics covered..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Add to Catalog</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Issue Book -->
+<div class="modal fade" id="issueBookModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/admin/library/issue}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Circulation: Issue Book Loan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select Book</label>
+                        <select name="bookId" class="form-select" required>
+                            <option th:each="b : ${books}" th:if="${b.availableCopies > 0}" th:value="${b.id}"
+                                    th:text="${b.title + ' (' + b.availableCopies + ' available)'}">Book</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Borrower Category</label>
+                        <select name="borrowerType" id="borrowerTypeSelect" class="form-select" onchange="toggleBorrowerFields()" required>
+                            <option value="STUDENT">Student</option>
+                            <option value="FACULTY">Faculty Member</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="studentSelectGroup">
+                        <label class="form-label small fw-semibold">Student</label>
+                        <select name="studentId" class="form-select">
+                            <option value="">-- Choose Student --</option>
+                            <option th:each="st : ${students}" th:value="${st.id}" th:text="${st.fullName + ' (' + st.studentId + ')'}">Student</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="facultySelectGroup">
+                        <label class="form-label small fw-semibold">Faculty Member</label>
+                        <select name="teacherId" class="form-select">
+                            <option value="">-- Choose Faculty --</option>
+                            <option th:each="t : ${teachers}" th:value="${t.id}" th:text="${t.name + ' (' + t.teacherId + ')'}">Faculty</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Due Date (Optional - defaults to 14 days for students / 30 for faculty)</label>
+                        <input type="date" name="dueDate" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Issue Book</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleBorrowerFields() {
+        const type = document.getElementById('borrowerTypeSelect').value;
+        const studentGroup = document.getElementById('studentSelectGroup');
+        const facultyGroup = document.getElementById('facultySelectGroup');
+        if (type === 'STUDENT') {
+            studentGroup.classList.remove('d-none');
+            facultyGroup.classList.add('d-none');
+        } else {
+            studentGroup.classList.add('d-none');
+            facultyGroup.classList.remove('d-none');
+        }
+    }
+</script>
+
+<div th:replace="~{layout/admin-layout :: scripts}"></div>
+</body>
+</html>

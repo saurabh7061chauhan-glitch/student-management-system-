@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/student-layout :: head(title='My Profile')}"></head>
+<body>
+
+<div class="app-wrapper">
+    <aside th:replace="~{layout/student-layout :: sidebar(activeMenu='profile', student=${student})}"></aside>
+
+    <div class="main-content">
+        <nav th:replace="~{layout/student-layout :: topbar(pageTitle='My Student Profile', student=${student})}"></nav>
+
+        <div class="page-container">
+            <div class="row g-4">
+                <!-- Left Column: Avatar & Summary -->
+                <div class="col-lg-4">
+                    <div class="card-custom text-center p-4">
+                        <img th:src="${student.photoUrl}" class="avatar-lg mx-auto mb-3" alt="Student Photo">
+                        <h5 class="fw-bold text-dark mb-1" th:text="${student.fullName}">Full Name</h5>
+                        <p class="text-secondary small mb-2" th:text="${student.studentId}">STU2025001</p>
+                        <span class="badge-status badge-status-active mb-3">
+                            <i class="bi bi-check-circle-fill"></i> <span th:text="${student.status}">Active</span>
+                        </span>
+                        <div class="border-top pt-3 text-start small">
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-secondary">Email:</span>
+                                <span class="fw-semibold text-dark text-truncate" style="max-width: 170px;" th:text="${student.email}">Email</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-secondary">Phone:</span>
+                                <span class="fw-semibold text-dark" th:text="${student.phone}">Phone</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-1">
+                                <span class="text-secondary">Email Verified:</span>
+                                <span class="badge bg-success-subtle text-success">Verified</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Academic & Personal Records -->
+                <div class="col-lg-8">
+                    <div class="card-custom mb-4">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-person-lines-fill text-primary me-2"></i>Personal Particulars</span>
+                        </div>
+                        <div class="card-custom-body">
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Full Legal Name</label>
+                                    <div class="fw-bold text-dark" th:text="${student.fullName}">Name</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Student ID</label>
+                                    <div class="fw-bold text-dark" th:text="${student.studentId}">ID</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Date of Birth</label>
+                                    <div class="fw-medium text-dark" th:text="${student.dob != null ? student.dob : 'Not specified'}">-</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Gender</label>
+                                    <div class="fw-medium text-dark" th:text="${student.gender}">Male</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="small text-secondary fw-semibold">Permanent Address</label>
+                                    <div class="fw-medium text-dark" th:text="${student.address != null ? student.address : 'Not specified'}">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-custom">
+                        <div class="card-custom-header">
+                            <span class="fw-bold text-dark"><i class="bi bi-mortarboard text-primary me-2"></i>Academic Enrollment</span>
+                        </div>
+                        <div class="card-custom-body">
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Department</label>
+                                    <div class="fw-bold text-dark" th:text="${student.department != null ? student.department.name : 'N/A'}">Computer Science</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Degree Course</label>
+                                    <div class="fw-bold text-dark" th:text="${student.course != null ? student.course.name : 'N/A'}">B.Tech</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Current Semester</label>
+                                    <div class="fw-medium text-dark" th:text="'Semester ' + ${student.semester}">Sem 3</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="small text-secondary fw-semibold">Date of Admission</label>
+                                    <div class="fw-medium text-dark" th:text="${student.admissionDate}">Date</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{layout/student-layout :: scripts}"></div>
+</body>
+</html>
