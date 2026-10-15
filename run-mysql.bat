@@ -6,7 +6,8 @@ echo Username: root
 echo ====================================================
 
 if "%DB_PASSWORD%"=="" (
-    set DB_PASSWORD=@1S2aurabh@1S2
+    echo [INFO] DB_PASSWORD is not set in current console session.
+    echo [INFO] Please set DB_PASSWORD if your MySQL root account requires a password.
 )
 
 call mvnw.cmd spring-boot:run

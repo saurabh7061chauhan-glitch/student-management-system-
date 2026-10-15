@@ -8,4 +8,8 @@ echo     SELECT id, student_id, full_name, email FROM students;
 echo     SELECT * FROM courses;
 echo     exit;
 echo =======================================================
-"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p@1S2aurabh@1S2 university2_0_erp
+if "%DB_PASSWORD%"=="" (
+    "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p university2_0_erp
+) else (
+    "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root "--password=%DB_PASSWORD%" university2_0_erp
+)

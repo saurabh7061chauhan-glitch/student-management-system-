@@ -58,11 +58,9 @@ public class SecurityConfig {
                     "/images/**",
                     "/webjars/**",
                     "/favicon.ico",
-                    "/uploads/**",
-                    "/api/diagnostics/**",
                     "/h2-console/**"
                 ).permitAll()
-                .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/admin/**", "/api/admin/**", "/api/diagnostics/**").hasRole("ADMIN")
                 .requestMatchers("/faculty/**", "/api/faculty/**").hasRole("FACULTY")
                 .requestMatchers("/student/**", "/api/student/**").hasRole("STUDENT")
                 .anyRequest().authenticated()
