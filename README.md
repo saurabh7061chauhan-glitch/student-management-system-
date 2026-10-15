@@ -26,12 +26,17 @@ It integrates end-to-end institutional workflows including student onboarding, Q
 * **Fee Record & Invoicing**: Track fee receipts, payment modes, and download server-generated PDF receipts.
 * **Audit Logging & Security**: Track administrative actions and system security events.
 
+  <img width="1920" height="1080" alt="Screenshot 2026-10-15 210041" src="https://github.com/user-attachments/assets/fb55b51d-a4e5-4f98-ad14-c649b6154c73" />
+
+
 ### 👨‍🏫 2. Faculty Portal
 * **QR Attendance Generation**: Generate dynamic QR sessions for real-time classroom attendance.
 * **Manual & Bulk Attendance**: Period-wise and subject-wise attendance marking with percentage calculations.
 * **Marks & Grading Management**: Enter internal marks, mid-terms, and final exam scores with auto-calculated grades and GPA.
 * **Assignments & Submissions**: Post assignments with deadlines and evaluate student submissions.
 * **Digital Study Materials**: Upload course lecture notes, syllabus files, and reference materials.
+  <img width="1920" height="1080" alt="Screenshot 2026-10-15 215404" src="https://github.com/user-attachments/assets/b7fedaae-dca9-426f-a389-82425b59e585" />
+
 
 ### 🎓 3. Student Portal
 * **Personalized Dashboard**: Real-time attendance percentage alerts (with low-attendance warnings), CGPA, and enrolled subjects.
@@ -40,6 +45,9 @@ It integrates end-to-end institutional workflows including student onboarding, Q
 * **Digital ID Card**: Generate and download university student ID cards with embedded student QR verification code.
 * **Fee History & Receipts**: View paid/pending balances and download PDF payment receipts.
 * **Grievance Redressal**: Lodge academic or administrative grievances and monitor resolution status in real-time.
+  <img width="1920" height="1080" alt="Screenshot 2026-10-15 215307" src="https://github.com/user-attachments/assets/2c838c2b-2212-4257-974d-b354fd657a6c" />
+
+
 
 ---
 
